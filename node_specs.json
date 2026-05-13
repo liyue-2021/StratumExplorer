@@ -1,0 +1,132 @@
+[
+  {
+    "order": 1,
+    "typeId": "input.las",
+    "displayName": "LAS 数据输入",
+    "category": "数据输入",
+    "group": "DataInput",
+    "kind": "PureOutput",
+    "inputs": [],
+    "outputs": [
+      {
+        "key": "out",
+        "displayName": "数据",
+        "format": "HDF5"
+      }
+    ],
+    "defaultParams": {
+      "path": ""
+    },
+    "description": "从 LAS 文件读取测井曲线，转换为内部 HDF5。",
+    "externalProcess": true
+  },
+  {
+    "order": 2,
+    "typeId": "preprocess.despike",
+    "displayName": "去毛刺",
+    "category": "DAS 处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "inputs": [
+      {
+        "key": "in",
+        "displayName": "输入",
+        "format": "HDF5"
+      }
+    ],
+    "outputs": [
+      {
+        "key": "out",
+        "displayName": "输出",
+        "format": "HDF5"
+      }
+    ],
+    "defaultParams": {
+      "threshold": 3.0
+    },
+    "description": "基于阈值滤除尖峰噪声。",
+    "externalProcess": true
+  },
+  {
+    "order": 3,
+    "typeId": "preprocess.bandpass",
+    "displayName": "带通滤波",
+    "category": "DAS 处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "inputs": [
+      {
+        "key": "in",
+        "displayName": "输入",
+        "format": "HDF5"
+      }
+    ],
+    "outputs": [
+      {
+        "key": "out",
+        "displayName": "输出",
+        "format": "HDF5"
+      }
+    ],
+    "defaultParams": {
+      "lowCut": 10.0,
+      "highCut": 200.0
+    },
+    "description": "Butterworth 带通滤波器。",
+    "externalProcess": true
+  },
+  {
+    "order": 4,
+    "typeId": "display.lineplot",
+    "displayName": "折线图",
+    "category": "可视化",
+    "group": "Display",
+    "kind": "InOut",
+    "inputs": [
+      {
+        "key": "in",
+        "displayName": "数据",
+        "format": "HDF5"
+      }
+    ],
+    "outputs": [
+      {
+        "key": "out",
+        "displayName": "透传",
+        "format": "HDF5"
+      }
+    ],
+    "defaultParams": {},
+    "description": "将上游通道数据以折线图展示，可导出 PNG/CSV；同时透传数据给下游节点。",
+    "externalProcess": false
+  },
+  {
+    "order": 5,
+    "typeId": "display.merge",
+    "displayName": "多结果汇总",
+    "category": "可视化",
+    "group": "Display",
+    "kind": "PureInput",
+    "inputs": [
+      {
+        "key": "in1",
+        "displayName": "结果 1",
+        "format": "HDF5"
+      },
+      {
+        "key": "in2",
+        "displayName": "结果 2",
+        "format": "HDF5"
+      },
+      {
+        "key": "in3",
+        "displayName": "结果 3",
+        "format": "HDF5"
+      }
+    ],
+    "outputs": [],
+    "defaultParams": {},
+    "description": "合并多个上游结果到一个汇总报告。",
+    "externalProcess": false
+  }
+]

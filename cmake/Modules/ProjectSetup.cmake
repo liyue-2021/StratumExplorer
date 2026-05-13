@@ -1,0 +1,38 @@
+# cmake/Modules/ProjectSetup.cmake
+# 项目全局设置：系统、架构、输出目录
+message(STATUS "======== 加载项目全局配置 ========")
+
+# 1. 系统平台
+string(TOLOWER ${CMAKE_SYSTEM_NAME} BUILD_OS)
+
+# 2. CPU架构
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64|x86_64")
+    set(BUILD_ARCH "x64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64|aarch64")
+    set(BUILD_ARCH "arm64")
+else()
+    set(BUILD_ARCH ${CMAKE_SYSTEM_PROCESSOR})
+endif()
+
+# 3. 输出目录
+set(OUTPUT_BIN ${PROJECT_SOURCE_DIR}/bin/${BUILD_OS}/${BUILD_ARCH})
+set(OUTPUT_LIB ${PROJECT_SOURCE_DIR}/lib/${BUILD_OS}/${BUILD_ARCH})
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_BIN})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_LIB})
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_LIB})
+
+# 4. Debug/Release 区分
+foreach(TYPE DEBUG RELEASE)
+    string(TOUPPER ${TYPE} TYPE_UPPER)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${TYPE_UPPER} ${OUTPUT_BIN}/${TYPE})
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${TYPE_UPPER} ${OUTPUT_LIB}/${TYPE})
+endforeach()
+
+# 5. 工具链配置
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(TARGET_PLATFORM "Windows")
+
+# 打印配置
+message(STATUS "平台: ${BUILD_OS} | 架构: ${BUILD_ARCH}")
+message(STATUS "可执行文件输出: ${OUTPUT_BIN}")
