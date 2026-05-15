@@ -5,6 +5,7 @@
 #include "workspace/WorkSpacePage.h"
 #include "dialogs/LicenseDialog.h"
 
+#include <QCloseEvent>
 #include <QVBoxLayout>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -116,6 +117,16 @@ void MainWindow::togglePages()
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    if (workspacePage && !workspacePage->promptSaveCurrentWorkflowIfNeeded())
+    {
+        event->ignore();
+        return;
+    }
+    event->accept();
 }
 
 // ===================== 重写基类纯虚函数 =====================

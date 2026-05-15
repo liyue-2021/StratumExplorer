@@ -8,6 +8,8 @@
 //TODO 为啥需要相对路径，去掉..找不到头文件
 #include "../workspace/WorkSpacePage.h"
 
+class QCloseEvent;
+
 namespace Ui {
     class MainWindow;
 }
@@ -30,6 +32,8 @@ private:
     void addStackedPage(QWidget* page);
 
 protected:
+    void closeEvent(QCloseEvent *event) override;
+
     // 重写基类纯虚函数（统一规范）
     void clearSelfDataAndDisableBtn() override;
     void loadSelfDataAndEnableBtn() override;

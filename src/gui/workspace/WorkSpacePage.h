@@ -21,6 +21,9 @@ protected:
     void clearSelfDataAndDisableBtn() override;  // 清空自身UI（本页面无自身数据，空实现）
     void loadSelfDataAndEnableBtn() override;   // 加载自身数据（本页面无自身数据，空实现）
 
+public:
+    bool promptSaveCurrentWorkflowIfNeeded();
+
 private:
     Ui::WorkSpacePage *ui;
     void addTabPage(QWidget* page, const QString& tabName);

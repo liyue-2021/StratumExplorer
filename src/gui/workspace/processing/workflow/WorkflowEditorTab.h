@@ -54,12 +54,17 @@ namespace processing
             bool loadWorkflowData(const QByteArray &data);
 
         signals:
+            void requestClearCanvas();
             void requestOpenSavedWorkflow();
             void requestSaveWorkflow();
 
+        public:
+            bool hasUnsavedChanges() const;
+            void updateSavedWorkflowSnapshot();
+
         private slots:
-            // 清空画布，创建新的空白工作流
-            void onActionNew();
+            // 清空画布（由上层处理未保存提示、清空等逻辑）
+            void onActionClearCanvas();
             // 打开已保存的工作流列表界面
             void onActionOpenProject();
             // 将当前工作流保存到预设列表
@@ -99,6 +104,8 @@ namespace processing
             QFormLayout *m_paramsForm = nullptr;
             QLabel *m_statusLabel = nullptr;
             class LogDock *m_logDock = nullptr;
+
+            QByteArray m_savedWorkflowData;
 
             // 当前文件路径（“保存”不弹窗、直接覆盖）
             QString m_currentFilePath;

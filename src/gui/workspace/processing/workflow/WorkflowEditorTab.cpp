@@ -39,6 +39,7 @@ WorkflowEditorTab::WorkflowEditorTab(IWorkflowEngine *engine,
 {
     setupUi();
     setupConnections();
+    updateSavedWorkflowSnapshot();
 }
 
 WorkflowEditorTab::~WorkflowEditorTab()
@@ -73,8 +74,8 @@ void WorkflowEditorTab::setupUi()
     // ---- 顶部工具栏 ----
     m_toolbar = new QToolBar(this);
     m_toolbar->setIconSize(QSize(18, 18));
-    m_toolbar->addAction(tr("新建"), this, &WorkflowEditorTab::onActionNew);
-    m_toolbar->addAction(tr("打开工作流"), this, &WorkflowEditorTab::onActionOpenProject);
+    m_toolbar->addAction(tr("清空画布"), this, &WorkflowEditorTab::onActionClearCanvas);
+    m_toolbar->addAction(tr("打开预设"), this, &WorkflowEditorTab::onActionOpenProject);
     m_toolbar->addAction(tr("保存工作流"), this, &WorkflowEditorTab::onActionSaveProject);
     m_toolbar->addSeparator();
     m_toolbar->addAction(tr("运行选中节点"), this, &WorkflowEditorTab::onActionRunSingle);
@@ -225,27 +226,31 @@ QByteArray WorkflowEditorTab::currentWorkflowData() const
     return m_engine ? m_engine->serialize(false) : QByteArray();
 }
 
+bool WorkflowEditorTab::hasUnsavedChanges() const
+{
+    return currentWorkflowData() != m_savedWorkflowData;
+}
+
+void WorkflowEditorTab::updateSavedWorkflowSnapshot()
+{
+    m_savedWorkflowData = currentWorkflowData();
+}
+
 bool WorkflowEditorTab::loadWorkflowData(const QByteArray &data)
 {
     if (!m_engine)
         return false;
-    return m_engine->deserialize(data);
+    const bool success = m_engine->deserialize(data);
+    if (success)
+        updateSavedWorkflowSnapshot();
+    return success;
 }
 
 // ----------------------------------------------- 工具栏槽
 
-void WorkflowEditorTab::onActionNew()
+void WorkflowEditorTab::onActionClearCanvas()
 {
-    // 弹对话框确认清空
-    if (QMessageBox::question(this, tr("新建"),
-                              tr("确认清空当前工作流？")) == QMessageBox::Yes)
-    {
-        // 通知引擎清空所有节点和边
-        m_engine->clear();
-        m_currentFilePath.clear();
-        m_currentIsTemplate = true;
-        showStatus(tr("已新建空白工作流"));
-    }
+    emit requestClearCanvas();
 }
 
 void WorkflowEditorTab::onActionOpenProject()

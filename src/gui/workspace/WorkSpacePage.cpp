@@ -35,6 +35,25 @@ WorkSpacePage::~WorkSpacePage()
     delete ui;
 }
 
+bool WorkSpacePage::promptSaveCurrentWorkflowIfNeeded()
+{
+    for (int i = 0; i < ui->tabWidget->count(); ++i)
+    {
+        auto *widget = ui->tabWidget->widget(i);
+        auto *processing = qobject_cast<ProcessingPage *>(widget);
+        if (!processing)
+            continue;
+
+        if (!processing->promptSaveCurrentWorkflowIfDirty(
+                tr("保存当前工作区更改"),
+                tr("当前工作区有未保存更改，是否保存后继续？")))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 // ==============================================
 // 工具方法实现：统一封装标签页添加 + 子控件注册
 // ==============================================

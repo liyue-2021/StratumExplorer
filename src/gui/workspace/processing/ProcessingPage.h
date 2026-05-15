@@ -35,6 +35,8 @@ public:
     explicit ProcessingPage(QWidget *parent = nullptr);
     ~ProcessingPage();
 
+    bool promptSaveCurrentWorkflowIfDirty(const QString &title, const QString &message);
+
     // 新增：声明重写接口函数（统一规范）
     void clearAllDataAndDisableBtn() override;
     void loadAllDataAndEnableBtn() override;
@@ -43,11 +45,14 @@ private:
     void createPresetPage();
     void addPreset(const QString &name, const QString &creator, const QString &remark, const QByteArray &workflowData);
     void saveCurrentWorkflowAsPreset(const QString &name, const QString &creator, const QString &remark);
+    bool saveCurrentWorkflow();
+    void onRequestClearCanvas();
     void showPresetPage();
     void showWorkflowEditor(const QString &presetName = {});
     void updatePresetTable();
     void removePreset(int row);
-    void editPreset(int row);
+    void editPresetMetadata(int row);
+    void openPresetDetails(int row);
     void onSaveWorkflowRequested();
     void loadPresetsFromFile();
     void savePresetsToFile();

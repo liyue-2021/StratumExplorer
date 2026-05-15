@@ -37,12 +37,13 @@ namespace
     {
     public:
         PresetDialog(QWidget *parent = nullptr,
+                     const QString &title = {},
                      const QString &name = {},
                      const QString &creator = {},
                      const QString &remark = {})
             : QDialog(parent)
         {
-            setWindowTitle(tr("新建工作流预设"));
+            setWindowTitle(title.isEmpty() ? tr("新建工作流预设") : title);
             setModal(true);
             auto *layout = new QVBoxLayout(this);
             auto *form = new QFormLayout();
@@ -160,6 +161,8 @@ ProcessingPage::ProcessingPage(QWidget *parent)
             this, &ProcessingPage::showPresetPage);
     connect(m_editor, &processing::gui::WorkflowEditorTab::requestSaveWorkflow,
             this, &ProcessingPage::onSaveWorkflowRequested);
+    connect(m_editor, &processing::gui::WorkflowEditorTab::requestClearCanvas,
+            this, &ProcessingPage::onRequestClearCanvas);
 
     // 3) 占位页（后续可移除）— 让用户看出还能扩展
     auto *placeholder = new QWidget(m_innerTabs);
@@ -214,7 +217,7 @@ void ProcessingPage::createPresetPage()
     m_presetTable->setMaximumHeight(380);
     layout->addWidget(m_presetTable);
 
-    auto *hint = new QLabel(tr("双击行或点击“编辑”进入该预设工作流。保存后会直接写入预设列表。"), m_presetPage);
+    auto *hint = new QLabel(tr("单击“详情”进入工作流预设；“编辑”修改预设名称、创建人和备注。"), m_presetPage);
     hint->setStyleSheet("color:#607D8B; font-size:12px;");
     layout->addWidget(hint);
     layout->addStretch();
@@ -225,15 +228,8 @@ void ProcessingPage::createPresetPage()
         if (dlg.exec() == QDialog::Accepted)
         {
             saveCurrentWorkflowAsPreset(dlg.presetName(), dlg.creator(), dlg.remark());
-        } });
-    connect(m_presetTable, &QTableWidget::cellDoubleClicked, this,
-            [this](int row, int)
-            {
-                if (row >= 0 && row < m_presets.size())
-                {
-                    editPreset(row);
-                }
-            });
+        }
+    });
 }
 
 void ProcessingPage::addPreset(const QString &name, const QString &creator, const QString &remark, const QByteArray &workflowData)
@@ -266,22 +262,22 @@ void ProcessingPage::saveCurrentWorkflowAsPreset(const QString &name, const QStr
     QMessageBox::information(this, tr("保存成功"), tr("工作流已保存到预设列表。"));
 }
 
-void ProcessingPage::onSaveWorkflowRequested()
+bool ProcessingPage::saveCurrentWorkflow()
 {
     if (!m_editor)
-        return;
+        return false;
 
     const QByteArray workflowData = m_editor->currentWorkflowData();
     if (workflowData.isEmpty())
     {
         QMessageBox::warning(this, tr("保存失败"), tr("当前工作流数据为空，无法保存。"));
-        return;
+        return false;
     }
 
     bool hasCurrentPreset = !m_currentPresetName.isEmpty();
     SaveWorkflowDialog saveDialog(this, hasCurrentPreset);
     if (saveDialog.exec() != QDialog::Accepted)
-        return;
+        return false;
 
     if (hasCurrentPreset && saveDialog.updateCurrent())
     {
@@ -294,7 +290,9 @@ void ProcessingPage::onSaveWorkflowRequested()
                 updatePresetTable();
                 savePresetsToFile();
                 QMessageBox::information(this, tr("保存成功"), tr("已更新预设：%1").arg(m_currentPresetName));
-                return;
+                if (m_editor)
+                    m_editor->updateSavedWorkflowSnapshot();
+                return true;
             }
         }
         // 如果找不到当前预设，fallback 到另存
@@ -305,7 +303,36 @@ void ProcessingPage::onSaveWorkflowRequested()
     if (dlg.exec() == QDialog::Accepted)
     {
         saveCurrentWorkflowAsPreset(dlg.presetName(), dlg.creator(), dlg.remark());
+        if (m_editor)
+            m_editor->updateSavedWorkflowSnapshot();
+        return true;
     }
+
+    return false;
+}
+
+bool ProcessingPage::promptSaveCurrentWorkflowIfDirty(const QString &title, const QString &message)
+{
+    if (!m_editor || !m_editor->hasUnsavedChanges())
+        return true;
+
+    const QMessageBox::StandardButton result = QMessageBox::question(
+        this,
+        title,
+        message,
+        QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
+        QMessageBox::Yes);
+
+    if (result == QMessageBox::Yes)
+        return saveCurrentWorkflow();
+    if (result == QMessageBox::No)
+        return true;
+    return false;
+}
+
+void ProcessingPage::onSaveWorkflowRequested()
+{
+    saveCurrentWorkflow();
 }
 
 void ProcessingPage::updatePresetTable()
@@ -325,16 +352,21 @@ void ProcessingPage::updatePresetTable()
         opsLayout->setContentsMargins(0, 0, 0, 0);
         opsLayout->setSpacing(6);
         auto *editBtn = new QPushButton(tr("编辑"), ops);
+        auto *detailBtn = new QPushButton(tr("详情"), ops);
         auto *deleteBtn = new QPushButton(tr("删除"), ops);
         editBtn->setFixedHeight(24);
+        detailBtn->setFixedHeight(24);
         deleteBtn->setFixedHeight(24);
         opsLayout->addWidget(editBtn);
+        opsLayout->addWidget(detailBtn);
         opsLayout->addWidget(deleteBtn);
         opsLayout->addStretch();
         m_presetTable->setCellWidget(row, 5, ops);
 
         connect(editBtn, &QPushButton::clicked, this, [this, row]()
-                { editPreset(row); });
+                { editPresetMetadata(row); });
+        connect(detailBtn, &QPushButton::clicked, this, [this, row]()
+                { openPresetDetails(row); });
         connect(deleteBtn, &QPushButton::clicked, this, [this, row]()
                 { removePreset(row); });
     }
@@ -349,7 +381,25 @@ void ProcessingPage::removePreset(int row)
     savePresetsToFile();
 }
 
-void ProcessingPage::editPreset(int row)
+void ProcessingPage::editPresetMetadata(int row)
+{
+    if (row < 0 || row >= m_presets.size())
+        return;
+
+    auto item = m_presets.at(row);
+    PresetDialog dlg(this, tr("编辑预设信息"), item.name, item.creator, item.remark);
+    if (dlg.exec() != QDialog::Accepted)
+        return;
+
+    item.name = dlg.presetName();
+    item.creator = dlg.creator();
+    item.remark = dlg.remark();
+    m_presets[row] = item;
+    updatePresetTable();
+    savePresetsToFile();
+}
+
+void ProcessingPage::openPresetDetails(int row)
 {
     if (row < 0 || row >= m_presets.size() || !m_editor)
         return;
@@ -371,6 +421,13 @@ void ProcessingPage::editPreset(int row)
 }
 void ProcessingPage::showPresetPage()
 {
+    if (!promptSaveCurrentWorkflowIfDirty(
+            tr("保存当前工作区更改"),
+            tr("当前工作区有未保存更改，是否保存后切换到预设列表？")))
+    {
+        return;
+    }
+
     if (m_mainStack)
         m_mainStack->setCurrentWidget(m_presetPage);
 }
@@ -389,6 +446,44 @@ void ProcessingPage::showWorkflowEditor(const QString &presetName)
         m_innerTabs->setTabText(index, title);
     }
     m_currentPresetName = presetName; // 设置当前预设名称
+}
+
+void ProcessingPage::onRequestClearCanvas()
+{
+    if (!m_editor)
+        return;
+
+    if (!m_editor->hasUnsavedChanges())
+    {
+        if (m_workflowEngine)
+            m_workflowEngine->clear();
+        m_currentPresetName.clear();
+        if (m_editor)
+            m_editor->updateSavedWorkflowSnapshot();
+        showWorkflowEditor({});
+        return;
+    }
+
+    const QMessageBox::StandardButton result = QMessageBox::question(
+        this,
+        tr("确认清空画布"),
+        tr("当前工作流已有更改，是否确认丢弃所有更改并清空画布？"),
+        QMessageBox::Yes | QMessageBox::No,
+        QMessageBox::No);
+
+    if (result == QMessageBox::Yes)
+    {
+        if (m_workflowEngine)
+            m_workflowEngine->clear();
+        m_currentPresetName.clear();
+        if (m_editor)
+            m_editor->updateSavedWorkflowSnapshot();
+        showWorkflowEditor({});
+    }
+    else
+    {
+        QMessageBox::information(this, tr("请先保存"), tr("请先保存当前工作区更改或继续编辑。"));
+    }
 }
 
 // 新增：接口函数空实现（统一规范，后续填充业务逻辑）
