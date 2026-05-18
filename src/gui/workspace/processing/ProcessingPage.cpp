@@ -5,6 +5,7 @@
 #include "WorkflowEngine.h"
 #include "NodeRegistry.h"
 #include "DemoNodes.h"
+#include "ProductionNodes.h"
 
 #include <QTabWidget>
 #include <QStackedWidget>
@@ -141,6 +142,9 @@ ProcessingPage::ProcessingPage(QWidget *parent)
     // 0) 注册 demo 节点（幂等，重复调也安全）
     processing::demo::registerDemoNodes();
 
+    // 1) 注册真实算法节点（来自甲方节点规格文档）
+    processing::production::registerProductionNodes();
+
     // 1) 创建工作流引擎实例（注入节点工厂单例）
     auto *factory = &processing::NodeRegistry::instance();
     // 将 engine 归属到 ProcessingPage，以保证它在页面销毁前不会先于 UI 元素析构。
@@ -202,8 +206,8 @@ void ProcessingPage::createPresetPage()
     headerLayout->addWidget(btnNew);
     layout->addLayout(headerLayout);
 
-    m_presetTable = new QTableWidget(0, 6, m_presetPage);
-    m_presetTable->setHorizontalHeaderLabels({tr("序号"), tr("名称"), tr("创建时间"), tr("创建人"), tr("备注"), tr("操作")});
+    m_presetTable = new QTableWidget(0, 7, m_presetPage);
+    m_presetTable->setHorizontalHeaderLabels({tr("序号"), tr("名称"), tr("创建时间"), tr("最近修改"), tr("创建人"), tr("备注"), tr("操作")});
     m_presetTable->horizontalHeader()->setStretchLastSection(true);
     m_presetTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     m_presetTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Stretch);
@@ -228,8 +232,7 @@ void ProcessingPage::createPresetPage()
         if (dlg.exec() == QDialog::Accepted)
         {
             saveCurrentWorkflowAsPreset(dlg.presetName(), dlg.creator(), dlg.remark());
-        }
-    });
+        } });
 }
 
 void ProcessingPage::addPreset(const QString &name, const QString &creator, const QString &remark, const QByteArray &workflowData)
@@ -238,7 +241,9 @@ void ProcessingPage::addPreset(const QString &name, const QString &creator, cons
     item.name = name;
     item.creator = creator;
     item.remark = remark;
-    item.createdAt = QDateTime::currentDateTime().toString("yyyy/M/d HH:mm");
+    QString now = QDateTime::currentDateTime().toString("yyyy/M/d HH:mm");
+    item.createdAt = now;
+    item.modifiedAt = now;
     item.workflowData = workflowData;
     m_presets.append(item);
     updatePresetTable();
@@ -287,6 +292,7 @@ bool ProcessingPage::saveCurrentWorkflow()
             if (m_presets[i].name == m_currentPresetName)
             {
                 m_presets[i].workflowData = workflowData;
+                m_presets[i].modifiedAt = QDateTime::currentDateTime().toString("yyyy/M/d HH:mm");
                 updatePresetTable();
                 savePresetsToFile();
                 QMessageBox::information(this, tr("保存成功"), tr("已更新预设：%1").arg(m_currentPresetName));
@@ -344,8 +350,9 @@ void ProcessingPage::updatePresetTable()
         m_presetTable->setItem(row, 0, new QTableWidgetItem(QString::number(row + 1)));
         m_presetTable->setItem(row, 1, new QTableWidgetItem(item.name));
         m_presetTable->setItem(row, 2, new QTableWidgetItem(item.createdAt));
-        m_presetTable->setItem(row, 3, new QTableWidgetItem(item.creator));
-        m_presetTable->setItem(row, 4, new QTableWidgetItem(item.remark));
+        m_presetTable->setItem(row, 3, new QTableWidgetItem(item.modifiedAt));
+        m_presetTable->setItem(row, 4, new QTableWidgetItem(item.creator));
+        m_presetTable->setItem(row, 5, new QTableWidgetItem(item.remark));
 
         auto *ops = new QWidget(m_presetTable);
         auto *opsLayout = new QHBoxLayout(ops);
@@ -361,7 +368,7 @@ void ProcessingPage::updatePresetTable()
         opsLayout->addWidget(detailBtn);
         opsLayout->addWidget(deleteBtn);
         opsLayout->addStretch();
-        m_presetTable->setCellWidget(row, 5, ops);
+        m_presetTable->setCellWidget(row, 6, ops);
 
         connect(editBtn, &QPushButton::clicked, this, [this, row]()
                 { editPresetMetadata(row); });
@@ -394,6 +401,7 @@ void ProcessingPage::editPresetMetadata(int row)
     item.name = dlg.presetName();
     item.creator = dlg.creator();
     item.remark = dlg.remark();
+    item.modifiedAt = QDateTime::currentDateTime().toString("yyyy/M/d HH:mm");
     m_presets[row] = item;
     updatePresetTable();
     savePresetsToFile();
@@ -525,6 +533,9 @@ void ProcessingPage::loadPresetsFromFile()
         item.creator = obj["creator"].toString();
         item.remark = obj["remark"].toString();
         item.createdAt = obj["createdAt"].toString();
+        item.modifiedAt = obj["modifiedAt"].toString();
+        if (item.modifiedAt.isEmpty())
+            item.modifiedAt = item.createdAt; // 兼容旧数据
         item.workflowData = QByteArray::fromBase64(obj["workflowData"].toString().toUtf8());
         m_presets.append(item);
     }
@@ -547,6 +558,7 @@ void ProcessingPage::savePresetsToFile()
         obj["creator"] = item.creator;
         obj["remark"] = item.remark;
         obj["createdAt"] = item.createdAt;
+        obj["modifiedAt"] = item.modifiedAt;
         obj["workflowData"] = QString::fromUtf8(item.workflowData.toBase64());
         array.append(obj);
     }

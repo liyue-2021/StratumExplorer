@@ -4,14 +4,19 @@ set(SOURCES
     WorkflowEngine.cpp
     WorkflowTypes.cpp
     DemoNodes.cpp
+    ProductionNodes.cpp
+    ProductionNodeParams.cpp
     ExternalProcessRunner.cpp
     ExternalProcessNode.cpp
     LogBus.cpp
+    node_client_params.qrc
 )
 set(HEADERS
     NodeRegistry.h
     WorkflowEngine.h
     DemoNodes.h
+    ProductionNodes.h
+    ProductionNodeParams.h
     ExternalProcessRunner.h
     ExternalProcessNode.h
     LogBus.h

@@ -63,3 +63,11 @@ if(WIN32)
             COMMENT "正在自动复制 Qt 依赖库到 exe 目录..."
     )
 endif()
+
+# 节点参数表：随 exe 部署一份，供 QRC 未链入时的兜底读取
+add_custom_command(TARGET app POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_SOURCE_DIR}/src/core/service/processing/node_client_params.json
+        $<TARGET_FILE_DIR:app>/node_client_params.json
+        COMMENT "Copy node_client_params.json beside executable"
+)

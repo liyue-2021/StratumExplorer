@@ -63,6 +63,7 @@ private:
         QString creator;
         QString remark;
         QString createdAt;
+        QString modifiedAt; // 最近修改时间
         QByteArray workflowData;
     };
 

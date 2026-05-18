@@ -18,6 +18,8 @@ compile_commands.json
 
 #runtime
 *.db
+*.db-shm
+*.db-wal
 *.log
 
 #system temp
@@ -25,3 +27,13 @@ compile_commands.json
 Thumbs.db
 *~
 core.*
+
+# local-only (not for git)
+depend/
+scripts/
+.claude/
+
+# one-off tool outputs at repo root
+fix_output.txt
+parse_output.txt
+D*word_tables.txt

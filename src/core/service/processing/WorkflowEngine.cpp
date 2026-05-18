@@ -1,5 +1,6 @@
 #include "WorkflowEngine.h"
 #include "LogBus.h"
+#include "ProductionNodeParams.h"
 
 #include <QUuid>
 #include <QJsonDocument>
@@ -37,8 +38,9 @@ QString WorkflowEngine::addNode(const QString& typeId, const QPointF& pos) {
     rec.info.typeId      = typeId;
     rec.info.displayName = node->meta().displayName;
     rec.info.position    = pos;
-    rec.info.params      = node->meta().defaultParams;
-    rec.node             = node;
+    rec.info.params =
+        production::mergeWithClientDefaults(typeId, node->meta().defaultParams);
+    rec.node = node;
     node->setInstanceId(rec.info.instanceId);
     node->setParams(rec.info.params);
 
@@ -462,7 +464,8 @@ bool WorkflowEngine::deserialize(const QByteArray& data) {
         if (n.contains("w") && n.contains("h")) {
             rec.info.size = QSizeF(n.value("w").toDouble(), n.value("h").toDouble());
         }
-        rec.info.params      = n.value("params").toObject().toVariantMap();
+        rec.info.params = production::mergeWithClientDefaults(
+            type, n.value("params").toObject().toVariantMap());
         if (withData) {
             for (const auto& f : n.value("inputs").toArray()) rec.info.inputFiles.append(f.toString());
             for (const auto& f : n.value("outputs").toArray()) rec.outputs.append(f.toString());

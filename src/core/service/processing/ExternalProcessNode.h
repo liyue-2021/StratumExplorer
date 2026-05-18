@@ -56,7 +56,7 @@ public:
     bool isCancelRequested() const override;
 
 private:
-    /// 生成输出文件路径：%TEMP%/oilpro/<instanceId>.h5
+    /// 生成输出目录：%TEMP%/oilpro/
     QString buildOutputPath() const;
 
     NodeMeta                          m_meta;

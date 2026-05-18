@@ -142,7 +142,8 @@ void WorkflowEditorTab::setupUi()
     m_splitter->setStretchFactor(0, 0);
     m_splitter->setStretchFactor(1, 1);
     m_splitter->setStretchFactor(2, 0);
-    m_splitter->setSizes({200, 800, 240});
+    right->setMinimumWidth(260);
+    m_splitter->setSizes({220, 800, 300});
 
     // ---- 底部日志面板（监听全局 LogBus）----
     // 日志面板暂时隐藏，只注释界面布局，后端日志实现仍保留
@@ -379,27 +380,76 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
     }
 
     // 头部信息
+    const QString id = nodeId; // capture by value
+
+    // 获取节点元数据：中文标签 + 参数顺序，并与实例参数合并
+    QMap<QString, QString> paramLabels;
+    QStringList paramOrder;
+    bool paramsFictional = false;
+    QVariantMap displayParams = info.params;
+    if (m_factory)
+    {
+        for (const auto &meta : m_factory->listAll())
+        {
+            if (meta.typeId == info.typeId)
+            {
+                paramLabels = meta.paramLabels;
+                paramOrder = meta.paramOrder;
+                paramsFictional = meta.clientParamsFictional;
+                displayParams = meta.defaultParams;
+                for (auto it = info.params.constBegin(); it != info.params.constEnd(); ++it)
+                    displayParams.insert(it.key(), it.value());
+                // 旧工作流/预设里 params 为空或不完整时，自动补齐并写回引擎
+                if (displayParams.size() > info.params.size())
+                    m_engine->setNodeParams(id, displayParams);
+                break;
+            }
+        }
+    }
+
+    const QString fictionalNote =
+        paramsFictional
+            ? tr("<br><span style='color:#E65100'>（参数为行业模板，暂为虚构，待甲方确认）</span>")
+            : QString();
     auto *lblHead = new QLabel(
-        QStringLiteral("<b>%1</b><br><span style='color:#607D8B'>%2</span>")
-            .arg(info.displayName, info.typeId),
+        QStringLiteral("<b>%1</b><br><span style='color:#607D8B'>%2</span>%3")
+            .arg(info.displayName, info.typeId, fictionalNote),
         m_paramsPanel);
     lblHead->setTextFormat(Qt::RichText);
     m_paramsForm->addRow(lblHead);
 
-    if (info.params.isEmpty())
+    if (displayParams.isEmpty())
     {
         m_paramsForm->addRow(new QLabel(tr("此节点无可配置参数"), m_paramsPanel));
         return;
     }
 
-    // 按 key 字典序排，UI 稳定
-    QStringList keys = info.params.keys();
-    keys.sort();
-    const QString id = nodeId; // capture by value
+    QStringList keys;
+    if (!paramOrder.isEmpty())
+    {
+        keys = paramOrder;
+        for (const QString &k : displayParams.keys())
+        {
+            if (!keys.contains(k))
+                keys.append(k);
+        }
+    }
+    else
+    {
+        keys = displayParams.keys();
+        keys.sort();
+    }
+
+    // 将 exePath 移到第一行（如果存在）
+    if (keys.contains("exePath"))
+    {
+        keys.removeAll("exePath");
+        keys.prepend("exePath");
+    }
 
     for (const QString &key : keys)
     {
-        const QVariant v = info.params.value(key);
+        const QVariant v = displayParams.value(key);
         QWidget *editor = nullptr;
 
         switch (static_cast<QMetaType::Type>(v.typeId()))
@@ -433,6 +483,45 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
                     p[key] = x;
                     m_engine->setNodeParams(id, p); });
             editor = sp;
+            break;
+        }
+        case QMetaType::QVariantList:
+        {
+            auto formatList = [](const QVariant &val) -> QString
+            {
+                QStringList parts;
+                for (const QVariant &item : val.toList())
+                    parts << item.toString();
+                return parts.join(QLatin1Char(','));
+            };
+            auto *le = new QLineEdit(formatList(v), m_paramsPanel);
+            le->setPlaceholderText(tr("逗号分隔，如 0,100"));
+            connect(le, &QLineEdit::editingFinished, this, [this, id, key, le]
+                    {
+                        QVariantMap p;
+                        for (const auto &n : m_engine->nodes())
+                            if (n.instanceId == id)
+                            {
+                                p = n.params;
+                                break;
+                            }
+                        QVariantList list;
+                        const QStringList parts =
+                            le->text().split(QLatin1Char(','), Qt::SkipEmptyParts);
+                        for (QString part : parts)
+                        {
+                            part = part.trimmed();
+                            bool ok = false;
+                            const double d = part.toDouble(&ok);
+                            if (ok)
+                                list.append(d);
+                            else
+                                list.append(part);
+                        }
+                        p[key] = list;
+                        m_engine->setNodeParams(id, p);
+                    });
+            editor = le;
             break;
         }
         case QMetaType::Double:
@@ -527,7 +616,9 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
             break;
         }
         }
-        m_paramsForm->addRow(key, editor);
+        // 使用中文标签或默认key
+        QString labelText = paramLabels.value(key, key);
+        m_paramsForm->addRow(labelText, editor);
     }
 }
 

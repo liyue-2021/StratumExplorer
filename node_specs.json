@@ -1,132 +1,987 @@
 [
+  // 说明：程序运行时不加载本文件。属性面板参数见 node_client_params.json；
+  // 注册与端口见 ProductionNodes.cpp。详见 node_specs.README.md
+  // =============================================================================
+  // 预处理小组件 - 数据格式转换
+  // =============================================================================
   {
     "order": 1,
-    "typeId": "input.las",
-    "displayName": "LAS 数据输入",
-    "category": "数据输入",
-    "group": "DataInput",
-    "kind": "PureOutput",
-    "inputs": [],
-    "outputs": [
-      {
-        "key": "out",
-        "displayName": "数据",
-        "format": "HDF5"
-      }
-    ],
-    "defaultParams": {
-      "path": ""
-    },
-    "description": "从 LAS 文件读取测井曲线，转换为内部 HDF5。",
-    "externalProcess": true
-  },
-  {
-    "order": 2,
-    "typeId": "preprocess.despike",
-    "displayName": "去毛刺",
-    "category": "DAS 处理",
+    "typeId": "preprocess.format_convert",
+    "displayName": "数据格式转换",
+    "category": "格式转换",
     "group": "Preprocess",
     "kind": "InOut",
+    "funcId": 0,
+    "funcName": "func_format_convert",
     "inputs": [
-      {
-        "key": "in",
-        "displayName": "输入",
-        "format": "HDF5"
-      }
+      {"key": "in", "displayName": "输入", "format": "Unknown"}
     ],
     "outputs": [
-      {
-        "key": "out",
-        "displayName": "输出",
-        "format": "HDF5"
-      }
-    ],
-    "defaultParams": {
-      "threshold": 3.0
-    },
-    "description": "基于阈值滤除尖峰噪声。",
-    "externalProcess": true
-  },
-  {
-    "order": 3,
-    "typeId": "preprocess.bandpass",
-    "displayName": "带通滤波",
-    "category": "DAS 处理",
-    "group": "Preprocess",
-    "kind": "InOut",
-    "inputs": [
-      {
-        "key": "in",
-        "displayName": "输入",
-        "format": "HDF5"
-      }
-    ],
-    "outputs": [
-      {
-        "key": "out",
-        "displayName": "输出",
-        "format": "HDF5"
-      }
-    ],
-    "defaultParams": {
-      "lowCut": 10.0,
-      "highCut": 200.0
-    },
-    "description": "Butterworth 带通滤波器。",
-    "externalProcess": true
-  },
-  {
-    "order": 4,
-    "typeId": "display.lineplot",
-    "displayName": "折线图",
-    "category": "可视化",
-    "group": "Display",
-    "kind": "InOut",
-    "inputs": [
-      {
-        "key": "in",
-        "displayName": "数据",
-        "format": "HDF5"
-      }
-    ],
-    "outputs": [
-      {
-        "key": "out",
-        "displayName": "透传",
-        "format": "HDF5"
-      }
+      {"key": "out", "displayName": "输出", "format": "HDF5"}
     ],
     "defaultParams": {},
-    "description": "将上游通道数据以折线图展示，可导出 PNG/CSV；同时透传数据给下游节点。",
-    "externalProcess": false
+    "description": "数据格式转换，将各种输入格式转换为统一的 HDF5 格式。",
+    "externalProcess": true
   },
+
+  // =============================================================================
+  // 预处理小组件 - 深度矫正
+  // =============================================================================
+  {
+    "order": 2,
+    "typeId": "preprocess.depth_correct",
+    "displayName": "深度矫正",
+    "category": "预处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 1,
+    "funcName": "func_depth_correct",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "输出数据", "format": "HDF5"}
+    ],
+    "defaultParams": {
+      "interp_method": "linear",
+      "depth_step": 0.5,
+      "bound": "clip"
+    },
+    "description": "基于参考深度文件，对测井数据进行深度校准，支持插值修正。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - 时间矫正
+  // =============================================================================
+  {
+    "order": 3,
+    "typeId": "preprocess.depth_time_correct",
+    "displayName": "时间矫正",
+    "category": "预处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 2,
+    "funcName": "func_depth_time_correct",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "输出数据", "format": "HDF5"}
+    ],
+    "defaultParams": {
+      "time_offset": 0.0,
+      "time_scale": 1.0,
+      "depth_offset": 0.0,
+      "depth_scale": 1.0
+    },
+    "description": "对数据的时间轴进行偏移、缩放矫正，确保时深匹配。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - 数据裁剪
+  // =============================================================================
+  {
+    "order": 4,
+    "typeId": "preprocess.data_crop",
+    "displayName": "数据裁剪",
+    "category": "预处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 3,
+    "funcName": "func_data_crop",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "输出数据", "format": "HDF5"}
+    ],
+    "defaultParams": {
+      "depth_min": 0.0,
+      "depth_max": 9999.0,
+      "time_min": 0.0,
+      "time_max": 999999.0
+    },
+    "description": "根据指定的深度、时间范围，剪裁无效数据，保留有效区间。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - 数据合并
+  // =============================================================================
   {
     "order": 5,
-    "typeId": "display.merge",
-    "displayName": "多结果汇总",
+    "typeId": "preprocess.data_merge",
+    "displayName": "数据合并",
+    "category": "预处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 4,
+    "funcName": "func_data_merge",
+    "inputs": [
+      {"key": "in", "displayName": "待合并数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "合并数据", "format": "HDF5"}
+    ],
+    "defaultParams": {
+      "concat_axis": "depth",
+      "channel_range": [],
+      "sample_points": 0
+    },
+    "description": "将多个文件按指定轴（深度/时间）拼接合并，支持通道筛选。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - DAS数据转换
+  // =============================================================================
+  {
+    "order": 6,
+    "typeId": "preprocess.das_convert",
+    "displayName": "DAS数据转换",
+    "category": "DAS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 5,
+    "funcName": "func_das_convert",
+    "inputs": [
+      {"key": "in", "displayName": "原始DAS数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "转换后数据", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "DAS（分布式声波传感）数据格式转换处理。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - LF-DAS提取
+  // =============================================================================
+  {
+    "order": 7,
+    "typeId": "preprocess.lfdas_extract",
+    "displayName": "LF-DAS提取",
+    "category": "DAS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 6,
+    "funcName": "func_lfdas_extract",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "提取结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "低频 DAS 信号提取。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - F-K分析
+  // =============================================================================
+  {
+    "order": 8,
+    "typeId": "preprocess.fk_analysis",
+    "displayName": "F-K分析",
+    "category": "DAS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 7,
+    "funcName": "func_fk_analysis",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "分析结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "频率-波数（F-K）分析。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - FFT提取
+  // =============================================================================
+  {
+    "order": 9,
+    "typeId": "preprocess.fft_extract",
+    "displayName": "FFT提取",
+    "category": "DAS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 8,
+    "funcName": "func_fft_extract",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "频谱数据", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "快速傅里叶变换（FFT）频谱提取。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - 带通滤波
+  // =============================================================================
+  {
+    "order": 10,
+    "typeId": "preprocess.bandpass_filter",
+    "displayName": "带通滤波",
+    "category": "DAS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 9,
+    "funcName": "func_bandpass_filter",
+    "inputs": [
+      {"key": "in", "displayName": "输入信号", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "滤波结果", "format": "HDF5"}
+    ],
+    "defaultParams": {
+      "low_cut": 10.0,
+      "high_cut": 200.0,
+      "order": 4
+    },
+    "description": "Butterworth 带通滤波器，对 DAS 信号做频率筛选。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - 降采样
+  // =============================================================================
+  {
+    "order": 11,
+    "typeId": "preprocess.downsample",
+    "displayName": "降采样",
+    "category": "DAS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 10,
+    "funcName": "func_downsample",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "降采样后数据", "format": "HDF5"}
+    ],
+    "defaultParams": {
+      "factor": 2
+    },
+    "description": "数据降采样，减少数据量。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - FTS提取
+  // =============================================================================
+  {
+    "order": 12,
+    "typeId": "preprocess.fts_extract",
+    "displayName": "FTS提取",
+    "category": "DAS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 11,
+    "funcName": "func_fts_extract",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "FTS结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "傅里叶变换谱（FTS）提取。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - 主频切分
+  // =============================================================================
+  {
+    "order": 13,
+    "typeId": "preprocess.mainfreq_split",
+    "displayName": "主频切分",
+    "category": "DAS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 12,
+    "funcName": "func_mainfreq_split",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "切分结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "按主频率对信号进行切分处理。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - FBE提取
+  // =============================================================================
+  {
+    "order": 14,
+    "typeId": "preprocess.fbe_extract",
+    "displayName": "FBE提取",
+    "category": "DAS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 13,
+    "funcName": "func_fbe_extract",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "FBE结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "FBE（Frequency Band Energy）频带能量提取。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - 滑动平均
+  // =============================================================================
+  {
+    "order": 15,
+    "typeId": "preprocess.moving_avg",
+    "displayName": "滑动平均",
+    "category": "DAS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 14,
+    "funcName": "func_moving_avg",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "平滑结果", "format": "HDF5"}
+    ],
+    "defaultParams": {
+      "window_size": 5
+    },
+    "description": "滑动平均滤波，平滑数据。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - 慢应变
+  // =============================================================================
+  {
+    "order": 16,
+    "typeId": "preprocess.slow_strain",
+    "displayName": "慢应变",
+    "category": "DTS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 15,
+    "funcName": "func_slow_strain",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "慢应变结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "慢应变信号提取。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - DTS去噪
+  // =============================================================================
+  {
+    "order": 17,
+    "typeId": "preprocess.dts_denoise",
+    "displayName": "DTS去噪",
+    "category": "DTS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 16,
+    "funcName": "func_dts_denoise",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "去噪结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "DTS（分布式温度传感）数据去噪处理。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - 温度矫正
+  // =============================================================================
+  {
+    "order": 18,
+    "typeId": "preprocess.temp_correct",
+    "displayName": "温度矫正",
+    "category": "DTS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 17,
+    "funcName": "func_temp_correct",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "矫正结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "温度数据矫正处理。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - 温度差分
+  // =============================================================================
+  {
+    "order": 19,
+    "typeId": "preprocess.temp_diff",
+    "displayName": "温度差分",
+    "category": "DTS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 18,
+    "funcName": "func_temp_diff",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "差分结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "温度差分计算。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - DTGS梯度
+  // =============================================================================
+  {
+    "order": 20,
+    "typeId": "preprocess.dtgs_gradient",
+    "displayName": "DTGS梯度",
+    "category": "DTS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 19,
+    "funcName": "func_dtgs_gradient",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "梯度结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "DTGS（分布式温度梯度传感）梯度计算。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - 基线构建
+  // =============================================================================
+  {
+    "order": 21,
+    "typeId": "preprocess.baseline_build",
+    "displayName": "基线构建",
+    "category": "DTS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 20,
+    "funcName": "func_baseline_build",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "基线数据", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "构建温度/应变基线。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - 应变扰动
+  // =============================================================================
+  {
+    "order": 22,
+    "typeId": "preprocess.strain_disturb",
+    "displayName": "应变扰动",
+    "category": "DTS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 21,
+    "funcName": "func_strain_disturb",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "扰动结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "应变扰动分析处理。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - 温度耦合分离
+  // =============================================================================
+  {
+    "order": 23,
+    "typeId": "preprocess.temp_coupling",
+    "displayName": "温度耦合分离",
+    "category": "DTS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 22,
+    "funcName": "func_temp_coupling",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "分离结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "温度耦合信号分离处理。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - 基线校准
+  // =============================================================================
+  {
+    "order": 24,
+    "typeId": "preprocess.baseline_calib",
+    "displayName": "基线校准",
+    "category": "DTS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 23,
+    "funcName": "func_baseline_calib",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "校准结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "基线校准处理。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 预处理小组件 - 物理量转变
+  // =============================================================================
+  {
+    "order": 25,
+    "typeId": "preprocess.phys_convert",
+    "displayName": "物理量转变",
+    "category": "DTS处理",
+    "group": "Preprocess",
+    "kind": "InOut",
+    "funcId": 24,
+    "funcName": "func_phys_convert",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "转换结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "物理量单位转换处理。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 解释分析类小组件 - 产出剖面解释
+  // =============================================================================
+  {
+    "order": 100,
+    "typeId": "interpret.profile_interp",
+    "displayName": "产出剖面解释",
+    "category": "解释分析",
+    "group": "Interpret",
+    "kind": "InOut",
+    "funcId": 25,
+    "funcName": "func_profile_interp",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "解释结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "产出剖面解释分析。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 解释分析类小组件 - 注入剖面解释
+  // =============================================================================
+  {
+    "order": 101,
+    "typeId": "interpret.inject_interp",
+    "displayName": "注入剖面解释",
+    "category": "解释分析",
+    "group": "Interpret",
+    "kind": "InOut",
+    "funcId": 26,
+    "funcName": "func_inject_interp",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "解释结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "注入剖面解释分析。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 解释分析类小组件 - 多相流诊断
+  // =============================================================================
+  {
+    "order": 102,
+    "typeId": "interpret.multiphase_diag",
+    "displayName": "多相流诊断",
+    "category": "解释分析",
+    "group": "Interpret",
+    "kind": "InOut",
+    "funcId": 27,
+    "funcName": "func_multiphase_diag",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "诊断结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "多相流诊断分析。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 解释分析类小组件 - 压裂面解释分析
+  // =============================================================================
+  {
+    "order": 103,
+    "typeId": "interpret.frac_interp",
+    "displayName": "压裂面解释分析",
+    "category": "解释分析",
+    "group": "Interpret",
+    "kind": "InOut",
+    "funcId": 28,
+    "funcName": "func_frac_interp",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "解释结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "压裂面解释分析。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 解释分析类小组件 - 井间窜通解释分析
+  // =============================================================================
+  {
+    "order": 104,
+    "typeId": "interpret.interwell_interp",
+    "displayName": "井间窜通解释分析",
+    "category": "解释分析",
+    "group": "Interpret",
+    "kind": "InOut",
+    "funcId": 29,
+    "funcName": "func_interwell_interp",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "解释结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "井间窜通解释分析。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 解释分析类小组件 - 不稳定温度井解释
+  // =============================================================================
+  {
+    "order": 105,
+    "typeId": "interpret.unstable_interp",
+    "displayName": "不稳定温度井解释",
+    "category": "解释分析",
+    "group": "Interpret",
+    "kind": "InOut",
+    "funcId": 30,
+    "funcName": "func_unstable_interp",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "解释结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "不稳定温度井解释分析。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 解释分析类小组件 - 微地震解释分析
+  // =============================================================================
+  {
+    "order": 106,
+    "typeId": "interpret.microseismic_interp",
+    "displayName": "微地震解释分析",
+    "category": "解释分析",
+    "group": "Interpret",
+    "kind": "InOut",
+    "funcId": 31,
+    "funcName": "func_microseismic_interp",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "解释结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "微地震解释分析。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 解释分析类小组件 - 井筒完整性解释
+  // =============================================================================
+  {
+    "order": 107,
+    "typeId": "interpret.wellbore_interp",
+    "displayName": "井筒完整性解释",
+    "category": "解释分析",
+    "group": "Interpret",
+    "kind": "InOut",
+    "funcId": 32,
+    "funcName": "func_wellbore_interp",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "解释结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "井筒完整性解释分析。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 解释分析类小组件 - 井眼轨迹计算
+  // =============================================================================
+  {
+    "order": 108,
+    "typeId": "interpret.welltrack_calc",
+    "displayName": "井眼轨迹计算",
+    "category": "解释分析",
+    "group": "Interpret",
+    "kind": "InOut",
+    "funcId": 33,
+    "funcName": "func_welltrack_calc",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "计算结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "井眼轨迹计算。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 解释分析类小组件 - 流压曲线计算
+  // =============================================================================
+  {
+    "order": 109,
+    "typeId": "interpret.flowpres_calc",
+    "displayName": "流压曲线计算",
+    "category": "解释分析",
+    "group": "Interpret",
+    "kind": "InOut",
+    "funcId": 34,
+    "funcName": "func_flowpres_calc",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "计算结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "流压曲线计算。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 解释分析类小组件 - 微差井温计算
+  // =============================================================================
+  {
+    "order": 110,
+    "typeId": "interpret.diff_temp_calc",
+    "displayName": "微差井温计算",
+    "category": "解释分析",
+    "group": "Interpret",
+    "kind": "InOut",
+    "funcId": 35,
+    "funcName": "func_diff_temp_calc",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "计算结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "微差井温计算。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 解释分析类小组件 - 分层产量计算
+  // =============================================================================
+  {
+    "order": 111,
+    "typeId": "interpret.zonal_prod_calc",
+    "displayName": "分层产量计算",
+    "category": "解释分析",
+    "group": "Interpret",
+    "kind": "InOut",
+    "funcId": 36,
+    "funcName": "func_zonal_prod_calc",
+    "inputs": [
+      {"key": "in", "displayName": "输入数据", "format": "HDF5"}
+    ],
+    "outputs": [
+      {"key": "out", "displayName": "计算结果", "format": "HDF5"}
+    ],
+    "defaultParams": {},
+    "description": "分层产量计算。",
+    "externalProcess": true
+  },
+
+  // =============================================================================
+  // 展示类小组件 - 解释结果展示
+  // =============================================================================
+  {
+    "order": 200,
+    "typeId": "display.interp_result",
+    "displayName": "解释结果展示",
     "category": "可视化",
     "group": "Display",
     "kind": "PureInput",
+    "funcId": 37,
+    "funcName": "func_interp_result_display",
     "inputs": [
-      {
-        "key": "in1",
-        "displayName": "结果 1",
-        "format": "HDF5"
-      },
-      {
-        "key": "in2",
-        "displayName": "结果 2",
-        "format": "HDF5"
-      },
-      {
-        "key": "in3",
-        "displayName": "结果 3",
-        "format": "HDF5"
-      }
+      {"key": "in", "displayName": "解释结果", "format": "HDF5"}
     ],
     "outputs": [],
     "defaultParams": {},
-    "description": "合并多个上游结果到一个汇总报告。",
+    "description": "展示解释分析结果。",
+    "externalProcess": false
+  },
+
+  // =============================================================================
+  // 展示类小组件 - 预处理结果展示
+  // =============================================================================
+  {
+    "order": 201,
+    "typeId": "display.preprocess_result",
+    "displayName": "预处理结果展示",
+    "category": "可视化",
+    "group": "Display",
+    "kind": "PureInput",
+    "funcId": 38,
+    "funcName": "func_preprocess_result_display",
+    "inputs": [
+      {"key": "in", "displayName": "预处理结果", "format": "HDF5"}
+    ],
+    "outputs": [],
+    "defaultParams": {},
+    "description": "展示预处理结果曲线。",
+    "externalProcess": false
+  },
+
+  // =============================================================================
+  // 展示类小组件 - 多结果合并展示
+  // =============================================================================
+  {
+    "order": 202,
+    "typeId": "display.multi_result",
+    "displayName": "多结果合并展示",
+    "category": "可视化",
+    "group": "Display",
+    "kind": "PureInput",
+    "funcId": 39,
+    "funcName": "func_multi_result_display",
+    "inputs": [
+      {"key": "in1", "displayName": "结果1", "format": "HDF5"},
+      {"key": "in2", "displayName": "结果2", "format": "HDF5"},
+      {"key": "in3", "displayName": "结果3", "format": "HDF5"}
+    ],
+    "outputs": [],
+    "defaultParams": {},
+    "description": "合并展示多个分析结果。",
+    "externalProcess": false
+  },
+
+  // =============================================================================
+  // 展示类小组件 - 井眼模型展示
+  // =============================================================================
+  {
+    "order": 203,
+    "typeId": "display.wellbore_model",
+    "displayName": "井眼模型展示",
+    "category": "可视化",
+    "group": "Display",
+    "kind": "PureInput",
+    "funcId": 40,
+    "funcName": "func_wellbore_model_display",
+    "inputs": [
+      {"key": "in", "displayName": "模型数据", "format": "HDF5"}
+    ],
+    "outputs": [],
+    "defaultParams": {},
+    "description": "井眼模型3D展示。",
+    "externalProcess": false
+  },
+
+  // =============================================================================
+  // 展示类小组件 - 井筒结构建立与展示
+  // =============================================================================
+  {
+    "order": 204,
+    "typeId": "display.well_struct",
+    "displayName": "井筒结构建立与展示",
+    "category": "可视化",
+    "group": "Display",
+    "kind": "PureInput",
+    "funcId": 41,
+    "funcName": "func_well_struct_display",
+    "inputs": [
+      {"key": "in", "displayName": "结构数据", "format": "HDF5"}
+    ],
+    "outputs": [],
+    "defaultParams": {},
+    "description": "井筒结构建立与展示。",
     "externalProcess": false
   }
 ]

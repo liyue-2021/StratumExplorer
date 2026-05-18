@@ -6,6 +6,7 @@
 #include <QString>
 #include <QVariantMap>
 #include <QList>
+#include <QMap>
 
 namespace processing
 {
@@ -31,8 +32,20 @@ namespace processing
         QList<PortSpec> outputs;     // 输出端口列表（PureInput 为空）
         QVariantMap defaultParams;   // 默认参数（用户可改 / 重置）
         QString description;         // 节点说明（鼠标悬浮提示）
-        bool externalProcess = true; // 是否走 stdin 跨进程；
-                                     // 数据格式转换=false（PDF 5.2.2）
+        bool externalProcess = true; // 是否走外部进程
+
+        // === 以下字段用于 ExternalProcessRunner HDF5 协议 ===
+        int funcId = 0;   // 功能编号 0~41（与 ProductionNodes 一致，后端 EXE 按此路由）
+        QString funcName; // Python 函数名（如 func_depth_correct）
+
+        // 参数中文标签映射（key -> 中文显示名）
+        QMap<QString, QString> paramLabels;
+
+        // 属性面板参数展示顺序（空则按 key 字典序）
+        QStringList paramOrder;
+
+        // true：属性参数来自行业通用模板，暂为虚构（见 node_client_params.json fictional）
+        bool clientParamsFictional = false;
     };
 
     // 端口匹配检查（连线时调用，PDF 3.1.3）
