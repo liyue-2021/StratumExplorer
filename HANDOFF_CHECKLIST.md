@@ -14,6 +14,57 @@
 | 编译产物 | `bin\windows\x64\DEBUG\StratumExplorer.exe` |
 | 构建状态 | **EXITCODE=0** |
 | 当前阶段 | **v1.0 已交付**：42 节点 + 中文属性面板 + 后端 JSON 配置协议 |
+| 远程仓库 | https://github.com/liyue-2021/StratumExplorer |
+| 最近 push | `41628de` → `origin/master`（2026-05-18） |
+
+---
+
+## 0. 发版与 Git 同步（每次必做）
+
+本地 `git commit` **不会**自动上传到 GitHub，发版或阶段性交付后必须 **push**。
+
+### 0.1 推荐命令顺序
+
+```powershell
+cd D:\pro\Demo\oilPro
+
+# 1. 构建通过
+cmd /c build_oilpro.cmd
+
+# 2. 本地提交
+git status
+git add <相关文件>
+git commit -m "release(vX.Y): 简要说明"
+
+# 3. 推送到 GitHub（必做）
+git push origin master
+
+# 4. 确认
+git log -1 --oneline
+# 浏览器打开仓库确认最新 commit
+```
+
+远程地址：`git@github.com:liyue-2021/StratumExplorer.git`（`origin`）
+
+### 0.2 每次 push 前必须更新的记录文档
+
+| 文件 | 更新内容 |
+|------|----------|
+| **`HANDOFF_CHECKLIST.md`** | 本表「项目现状」、版本节、待办、**最近 push 的 commit/hash/日期** |
+| **`PROJECT_CONTEXT.md`** | 文首「最近更新」、协议/架构若有变 |
+| **`MIGRATION_GUIDE.md`** | §0 开场白里的版本、构建状态、下一版本方向 |
+| `BACKEND_HANDOFF.md` | 仅当后端对接协议、IO 字段、JSON 结构有变时 |
+| `README.md` | 仅当依赖、目录说明、使用方式有变时 |
+
+代码有功能变更但文档未同步 → **不要 push**。
+
+### 0.3 发版检查清单
+
+- [ ] `build_oilpro.cmd` → EXITCODE=0  
+- [ ] 已 `git commit`  
+- [ ] 已更新上表中的记录文档  
+- [ ] 已 `git push origin master`  
+- [ ] GitHub 页面能看到最新 commit  
 
 ---
 

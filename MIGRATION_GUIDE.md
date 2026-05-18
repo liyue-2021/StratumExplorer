@@ -29,6 +29,23 @@
 
 ---
 
+## 0.1 发版后同步 GitHub
+
+仓库：https://github.com/liyue-2021/StratumExplorer  
+
+```powershell
+git push origin master
+```
+
+**每次 push 前**先更新记录文档（详见 `HANDOFF_CHECKLIST.md` §0.2）：
+
+- `HANDOFF_CHECKLIST.md`（必改）
+- `PROJECT_CONTEXT.md`
+- `MIGRATION_GUIDE.md`（含本文件 §0 开场白）
+- `BACKEND_HANDOFF.md` / `README.md`（有变更才改）
+
+---
+
 ## 1. 环境要求
 
 | 软件 | 版本 | 路径 |

@@ -17,7 +17,14 @@ cmd /c D:\pro\Demo\oilPro\build_oilpro.cmd
 
 # 运行
 D:\pro\Demo\oilPro\bin\windows\x64\DEBUG\StratumExplorer.exe
+
+# 发版推送到 GitHub（commit 后必做）
+git push origin master
 ```
+
+远程仓库：https://github.com/liyue-2021/StratumExplorer  
+
+每次 push 前更新 `HANDOFF_CHECKLIST.md`、`PROJECT_CONTEXT.md`、`MIGRATION_GUIDE.md`（详见 HANDOFF §0）。
 
 ---
 
@@ -31,7 +38,6 @@ D:\pro\Demo\oilPro\bin\windows\x64\DEBUG\StratumExplorer.exe
 | `node_specs.json` | 人工查阅用（**运行时不加载**，见 `node_specs.README.md`） |
 | `node_client_params.json` | 属性面板参数（运行时加载） |
 | `src/core/service/processing/ProductionNodes.cpp` | 42 节点注册 |
-| `BACKEND_HANDOFF.md` | 与后端 EXE 对接（任务 JSON 配置 + 6 个 IO 路径） |
 
 ---
 
