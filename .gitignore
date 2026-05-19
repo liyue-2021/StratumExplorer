@@ -1,39 +1,41 @@
-#qtcreator
+# IDE
 /.qtcreator/
-/build/
-
-#vscode
 /.vscode/
-
-#clion
 /.idea/
 /cmake-build-*/
 
-#cmake
+# CMake / 产物
+/build/
 /bin/
 /lib/
 /cache/
 *.qm
 compile_commands.json
 
-#runtime
+# 运行时
 *.db
 *.db-shm
 *.db-wal
 *.log
 
-#system temp
+# 系统
 .DS_Store
 Thumbs.db
 *~
 core.*
 
-# local-only (not for git)
-depend/
-scripts/
-.claude/
+# 本地资料（不进仓库）
+/depend/
+/scripts/
 
-# one-off tool outputs at repo root
+# 开发笔记（可选本地保留）
+/docs/dev/
+/chat.md
+
+# 构建日志目录
+/tools/build/logs/
+
+# 临时输出
 fix_output.txt
 parse_output.txt
 D*word_tables.txt

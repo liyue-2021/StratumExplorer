@@ -10,7 +10,7 @@
 | 项 | 状态 |
 |---|---|
 | 源码路径 | `D:\pro\Demo\oilPro\` |
-| 构建脚本 | `D:\pro\Demo\oilPro\build_oilpro.cmd` |
+| 构建脚本 | `tools\build\build_oilpro.cmd` |
 | 编译产物 | `bin\windows\x64\DEBUG\StratumExplorer.exe` |
 | 构建状态 | **EXITCODE=0** |
 | 当前阶段 | **v1.0 已交付**：42 节点 + 中文属性面板 + 后端 JSON 配置协议 |
@@ -29,7 +29,7 @@
 cd D:\pro\Demo\oilPro
 
 # 1. 构建通过
-cmd /c build_oilpro.cmd
+cmd /c tools\build\build_oilpro.cmd
 
 # 2. 本地提交
 git status
@@ -50,17 +50,17 @@ git log -1 --oneline
 
 | 文件 | 更新内容 |
 |------|----------|
-| **`HANDOFF_CHECKLIST.md`** | 本表「项目现状」、版本节、待办、**最近 push 的 commit/hash/日期** |
-| **`PROJECT_CONTEXT.md`** | 文首「最近更新」、协议/架构若有变 |
-| **`MIGRATION_GUIDE.md`** | §0 开场白里的版本、构建状态、下一版本方向 |
-| `BACKEND_HANDOFF.md` | 仅当后端对接协议、IO 字段、JSON 结构有变时 |
+| **`docs/HANDOFF_CHECKLIST.md`** | 本表「项目现状」、版本节、待办、**最近 push 的 commit/hash/日期** |
+| **`docs/PROJECT_CONTEXT.md`** | 文首「最近更新」、协议/架构若有变 |
+| **`docs/MIGRATION_GUIDE.md`** | §0 开场白里的版本、构建状态、下一版本方向 |
+| `docs/BACKEND_HANDOFF.md` | 仅当后端对接协议、IO 字段、JSON 结构有变时 |
 | `README.md` | 仅当依赖、目录说明、使用方式有变时 |
 
 代码有功能变更但文档未同步 → **不要 push**。
 
 ### 0.3 发版检查清单
 
-- [ ] `build_oilpro.cmd` → EXITCODE=0  
+- [ ] `tools\build\build_oilpro.cmd` → EXITCODE=0  
 - [ ] 已 `git commit`  
 - [ ] 已更新上表中的记录文档  
 - [ ] 已 `git push origin master`  

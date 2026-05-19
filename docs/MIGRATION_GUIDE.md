@@ -3,7 +3,7 @@
 > **场景1**：换电脑 → 配置新环境
 > **场景2**：AI 上下文满了 → 新窗口接力
 > **作者**：工程师 ly
-> **本指南配合**：`PROJECT_CONTEXT.md`（架构）+ `BACKEND_HANDOFF.md`（前后端约定）一起看。
+> **本指南配合**：`docs/PROJECT_CONTEXT.md`（架构）+ `docs/BACKEND_HANDOFF.md`（前后端约定）一起看。
 
 ---
 
@@ -14,12 +14,12 @@
 项目路径：D:\pro\Demo\oilPro\
 
 请按这个顺序读文档：
-1. PROJECT_CONTEXT.md  — 整体架构、约定、节点清单
-2. HANDOFF_CHECKLIST.md  — 当前进度、待办任务
-3. BACKEND_HANDOFF.md  — 与后端 EXE 的 JSON 配置协议
+1. docs/PROJECT_CONTEXT.md  — 整体架构、约定、节点清单
+2. docs/HANDOFF_CHECKLIST.md  — 当前进度、待办任务
+3. docs/BACKEND_HANDOFF.md  — 与后端 EXE 的 JSON 配置协议
 
 快速构建：
-  cmd /c D:\pro\Demo\oilPro\build_oilpro.cmd
+  cmd /c tools\build\build_oilpro.cmd
 
 最近一次构建：EXITCODE=0（2026-05-18，v1.0）
 已注册 42 个节点；属性面板参数见 node_client_params.json
@@ -39,10 +39,10 @@ git push origin master
 
 **每次 push 前**先更新记录文档（详见 `HANDOFF_CHECKLIST.md` §0.2）：
 
-- `HANDOFF_CHECKLIST.md`（必改）
-- `PROJECT_CONTEXT.md`
-- `MIGRATION_GUIDE.md`（含本文件 §0 开场白）
-- `BACKEND_HANDOFF.md` / `README.md`（有变更才改）
+- `docs/HANDOFF_CHECKLIST.md`（必改）
+- `docs/PROJECT_CONTEXT.md`
+- `docs/MIGRATION_GUIDE.md`（含本文件 §0 开场白）
+- `docs/BACKEND_HANDOFF.md` / `README.md`（有变更才改）
 
 ---
 
@@ -66,14 +66,14 @@ Test-Path "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\
 
 ## 2. 构建脚本
 
-项目已有构建脚本：`D:\pro\Demo\oilPro\build_oilpro.cmd`
+项目已有构建脚本：`tools\build\build_oilpro.cmd`
 
 ```powershell
 # 构建
 cmd /c D:\pro\Demo\oilPro\build_oilpro.cmd
 
 # 查看日志
-Get-Content D:\pro\Demo\oilPro\build_oilpro.log -Tail 30
+Get-Content tools\build\logs\build_oilpro.log -Tail 30
 ```
 
 预期输出最后一行：`EXITCODE=0`
@@ -85,7 +85,7 @@ Get-Content D:\pro\Demo\oilPro\build_oilpro.log -Tail 30
 | 错误 | 解决 |
 |------|------|
 | `type_traits` 找不到 | 先 `vcvars64.bat` |
-| `Could not find Qt6` | 修改 `build_oilpro.cmd` 里的 `QT_DIR` |
+| `Could not find Qt6` | 修改 `tools\build\build_oilpro.cmd` 里的 `QT_DIR` |
 | `LNK2005` | 确认 `moc_anchor.cpp` 存在 |
 | `QCUSTOMPLOT_USE_LIBRARY` | **不要**定义这个宏 |
 | 中文乱码 | **不是 bug**，忽略 |

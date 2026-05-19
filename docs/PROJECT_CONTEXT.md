@@ -13,7 +13,7 @@
 
 ```powershell
 # 构建
-cmd /c D:\pro\Demo\oilPro\build_oilpro.cmd
+cmd /c tools\build\build_oilpro.cmd
 
 # 运行
 D:\pro\Demo\oilPro\bin\windows\x64\DEBUG\StratumExplorer.exe
@@ -24,7 +24,7 @@ git push origin master
 
 远程仓库：https://github.com/liyue-2021/StratumExplorer  
 
-每次 push 前更新 `HANDOFF_CHECKLIST.md`、`PROJECT_CONTEXT.md`、`MIGRATION_GUIDE.md`（详见 HANDOFF §0）。
+每次 push 前更新 `docs/HANDOFF_CHECKLIST.md`、`docs/PROJECT_CONTEXT.md`、`docs/MIGRATION_GUIDE.md`（详见 HANDOFF §0）。
 
 ---
 
@@ -32,10 +32,10 @@ git push origin master
 
 | 文件 | 说明 |
 |------|------|
-| `HANDOFF_CHECKLIST.md` | 进度记录、回归测试、待办 |
-| `BACKEND_HANDOFF.md` | 与后端 EXE 对接（JSON 任务配置；业务 HDF5 归后端） |
-| `MIGRATION_GUIDE.md` | 换电脑时的环境配置 |
-| `node_specs.json` | 人工查阅用（**运行时不加载**，见 `node_specs.README.md`） |
+| `docs/HANDOFF_CHECKLIST.md` | 进度记录、回归测试、待办 |
+| `docs/BACKEND_HANDOFF.md` | 与后端 EXE 对接（JSON 任务配置；业务 HDF5 归后端） |
+| `docs/MIGRATION_GUIDE.md` | 换电脑时的环境配置 |
+| `docs/node_specs.json` | 人工查阅用（**运行时不加载**，见 `docs/node_specs.README.md`） |
 | `node_client_params.json` | 属性面板参数（运行时加载） |
 | `src/core/service/processing/ProductionNodes.cpp` | 42 节点注册 |
 
@@ -95,12 +95,12 @@ src/
 项目路径：D:\pro\Demo\oilPro\
 
 请按这个顺序读文档：
-1. PROJECT_CONTEXT.md  — 整体架构、约定、节点清单
-2. HANDOFF_CHECKLIST.md  — 当前进度、待办任务
-3. BACKEND_HANDOFF.md  — 与后端 EXE 的 JSON 配置协议
+1. docs/PROJECT_CONTEXT.md  — 整体架构、约定、节点清单
+2. docs/HANDOFF_CHECKLIST.md  — 当前进度、待办任务
+3. docs/BACKEND_HANDOFF.md  — 与后端 EXE 的 JSON 配置协议
 
 快速构建：
-  cmd /c D:\pro\Demo\oilPro\build_oilpro.cmd
+  cmd /c tools\build\build_oilpro.cmd
 
 最近一次构建：EXITCODE=0（2026-05-16）
 已注册 42 个真实算法节点（Preprocess 25个、Interpret 12个、Display 5个）

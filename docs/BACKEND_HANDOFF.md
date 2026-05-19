@@ -124,7 +124,7 @@
 
 - 注册代码：`ProductionNodes.cpp`
 - 属性面板：`node_client_params.json`（23 个真实参数 + 19 个虚构占位，`fictional: true`）
-- `node_specs.json`：**仅文档**，程序不读
+- `docs/node_specs.json`：**仅文档**，程序不读
 
 后端需提供：
 
