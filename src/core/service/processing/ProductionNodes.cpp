@@ -50,7 +50,7 @@ namespace processing
                 return finalizeMeta(m);
             }
 
-            // 预处理组 - 数据格式转换（参数见 node_client_params.json；旧弹窗 UI 保留待甲方确认）
+            // 预处理组 - 数据格式转换（参数见 node_client_params.json；右侧属性面板）
             NodeMeta makeFormatConvertMeta()
             {
                 NodeMeta m;
@@ -70,7 +70,7 @@ namespace processing
                 return finalizeMeta(m);
             }
 
-            // 预处理组 - 深度矫正 (funcId=1)；弹窗见 DepthCorrectDialog.ui
+            // 预处理组 - 深度矫正 (funcId=1)
             NodeMeta makeDepthCorrectMeta()
             {
                 NodeMeta m;
@@ -89,7 +89,7 @@ namespace processing
                 return finalizeMeta(m);
             }
 
-            // 预处理组 - 时间矫正 (funcId=2)；弹窗见 TimeCorrectDialog.ui
+            // 预处理组 - 时间矫正 (funcId=2)
             NodeMeta makeDepthTimeCorrectMeta()
             {
                 NodeMeta m;
@@ -108,7 +108,7 @@ namespace processing
                 return finalizeMeta(m);
             }
 
-            // 预处理组 - 数据裁剪 (funcId=3)；弹窗见 DataCropDialog.ui
+            // 预处理组 - 数据裁剪 (funcId=3)
             NodeMeta makeDataCropMeta()
             {
                 NodeMeta m;
@@ -127,7 +127,7 @@ namespace processing
                 return finalizeMeta(m);
             }
 
-            // 预处理组 - 数据合并 (funcId=4)；弹窗见 DataMergeDialog.ui
+            // 预处理组 - 数据合并 (funcId=4)
             NodeMeta makeDataMergeMeta()
             {
                 NodeMeta m;
@@ -146,7 +146,7 @@ namespace processing
                 return finalizeMeta(m);
             }
 
-            // 预处理组 - DAS数据转换 (funcId=5)；弹窗见 DasConvertDialog.ui
+            // 预处理组 - DAS数据转换 (funcId=5)
             NodeMeta makeDasConvertMeta()
             {
                 NodeMeta m;
@@ -165,7 +165,7 @@ namespace processing
                 return finalizeMeta(m);
             }
 
-            // 预处理组 - LF-DAS提取 (funcId=6)；弹窗见 LfdasExtractDialog.ui
+            // 预处理组 - LF-DAS提取 (funcId=6)
             NodeMeta makeLfdasExtractMeta()
             {
                 NodeMeta m;

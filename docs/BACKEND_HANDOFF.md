@@ -196,7 +196,7 @@ stdout 事件：`progress` / `done` / `error`
 | `src/core/service/processing/node_client_params.json` | 属性面板参数 → 写入 JSON 的 `params` |
 | 本文 §3、§4 | 配置与结果 JSON 字段约定 |
 
-在仓库内搜 **`TODO: 对接`** 可列出所有仍用样例/占位的弹窗与节点（多数已停用双击，逻辑未删）。
+在仓库内搜 **`TODO(后端)`** 可列出待对接算法位置。节点配置均在右侧属性面板（`node_client_params.json`），无独立配置弹窗。
 
 ---
 

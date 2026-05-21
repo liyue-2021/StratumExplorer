@@ -306,7 +306,7 @@ void WorkflowEditorTab::onNodeDoubleClicked(const QString &nodeId)
 {
     Q_UNUSED(nodeId);
     // 甲方确认前：不在双击时打开样例配置窗/图表窗，统一在右侧属性面板编辑
-    showStatus(tr("请在右侧属性面板编辑节点参数；样例弹窗 UI 已保留代码，待甲方确认后启用。"));
+    showStatus(tr("请在右侧属性面板编辑节点参数。"));
 }
 
 // 把当前节点的 params 转成 QFormLayout（按 QVariant 类型选 widget）

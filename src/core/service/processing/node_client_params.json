@@ -1,6 +1,6 @@
 {
   "_fileMeta": {
-    "note": "以甲方属性参数表为准；虚构样例弹窗已停用（configDialog 已移除），.ui 文件保留待后续确认"
+    "note": "以甲方属性参数表为准；节点参数在右侧属性面板编辑"
   },
   "input.data_input": {
     "order": ["input_files", "file_format"],

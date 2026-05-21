@@ -2,6 +2,7 @@
 /.qtcreator/
 /.vscode/
 /.idea/
+/.claude/
 /cmake-build-*/
 
 # CMake / 产物

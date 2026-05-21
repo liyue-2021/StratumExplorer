@@ -25,7 +25,7 @@
 rg "TODO\(后端\)|TODO: 对接" src/
 ```
 
-样例弹窗（`FormatConvertDialog` 等）已保留 `.ui`，**双击不打开**；对接时可忽略或作参考。
+节点参数均在**右侧属性面板**编辑（`WorkflowEditorTab::rebuildParamForm`）；`input.data_input` / `preprocess.format_convert` 有专用面板逻辑。
 
 ---
 

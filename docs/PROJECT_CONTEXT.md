@@ -7,7 +7,7 @@
 
 **构建状态**：✅ EXITCODE=0
 
-**高 DPI**：`main.cpp` → `setupHiDpiBeforeQApplication()`；界面用布局器 + 图表 `Expanding`；字体用 `pointSize`（详见 `src/gui/workspace/processing/workflow/node_dialogs.README.md` §高 DPI）。
+**高 DPI**：`main.cpp` → `setupHiDpiBeforeQApplication()`；界面用布局器 + 图表 `Expanding`；字体用 `pointSize`。
 
 ---
 
