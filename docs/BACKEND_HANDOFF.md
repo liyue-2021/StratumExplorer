@@ -160,7 +160,47 @@ stdout 事件：`progress` / `done` / `error`
 
 ---
 
-## 8. 附录：节点登记单（后端填写）
+## 8. 当前两类节点：谁在做真算法？
+
+很多预处理节点会走 **§2 的 EXE 协议**；下面两个是近期为「先跑通工作流」在前端写的 **占位逻辑**，**不会**启动 EXE，后端文档里容易漏看。
+
+| 节点 typeId | 是否调 EXE | 前端现在做了什么 | 后端还要做什么 |
+|-------------|------------|------------------|----------------|
+| `input.data_input` | 否 | 属性面板多选 LAS，运行后把路径当作下游输入 | 一般无需 EXE；若需校验 LAS 格式可另议 |
+| `preprocess.format_convert` | **否**（`externalProcess=false`） | `ExternalProcessNode.cpp` 里 **TODO**：读 LAS 字节写入 `.h5` 占位文件；导出按钮用 `QFile::copy` 另存 | **真 LAS→H5 转换**（库或独立模块）。对接方式二选一见下表 |
+| `preprocess.depth_correct` 等 23 个 | **是** | 写 `input_config_<id>.json`，`exe.exe config.json`，读 `task_<id>.json` | 在 EXE 内实现对应 `func_id` / `func_name` |
+
+### 8.1 格式转换：后端对接入口（二选一）
+
+**方案 A — 与其它节点一样走 EXE（推荐，和文档一致）**
+
+1. 后端实现 `func_id=0`、`func_name=func_format_convert`（见 `ProductionNodes.cpp`）。
+2. 读 `io.input_path`（上游 LAS 列表）、`params.output_dir` / `output_type`，写出真 HDF5 到 `io.output_path`。
+3. 在 `task_<taskId>.json` 的 `io.data_file_path` 填产出路径。
+4. 前端改一行：`makeFormatConvertMeta()` 里 `m.externalProcess = true`，并删掉 `ExternalProcessNode.cpp` 中 `preprocess.format_convert` 整段占位 `run()`。
+
+**方案 B — 应用内 DLL / 本地 API（不走 EXE）**
+
+1. 提供 C API 或 Qt 可链库：`convertLasToH5(inputs, outputDir, params) -> paths`。
+2. 前端在 `ExternalProcessNode.cpp` 的 **TODO**（约第 141 行）替换 `outFile.write(inFile.readAll())` 为调用该 API。
+
+无论哪种，**业务 HDF5 读写与 LAS 解析都在后端**；前端的「导出」只是复制已生成文件路径。
+
+### 8.2 后端联调时要看的源码（EXE 节点）
+
+| 文件 | 作用 |
+|------|------|
+| `src/core/service/processing/ExternalProcessRunner.cpp` | 写 `input_config_*.json`、启动进程、读 `task_*.json` |
+| `src/core/service/processing/ExternalProcessNode.cpp` | 从上游连线收集 `inputPaths`，从属性面板收集 `params` |
+| `src/core/service/processing/ProductionNodes.cpp` | 每个节点的 `funcId`、`funcName` |
+| `src/core/service/processing/node_client_params.json` | 属性面板参数 → 写入 JSON 的 `params` |
+| 本文 §3、§4 | 配置与结果 JSON 字段约定 |
+
+在仓库内搜 **`TODO: 对接`** 可列出所有仍用样例/占位的弹窗与节点（多数已停用双击，逻辑未删）。
+
+---
+
+## 9. 附录：节点登记单（后端填写）
 
 ```
 typeId        : preprocess.depth_correct
@@ -173,4 +213,4 @@ EXE 路径      : _______________________
 
 ---
 
-文档结束。协议以 `ExternalProcessRunner.h` 注释为准。
+文档结束。协议以 `ExternalProcessRunner.h` 头文件注释为准；**格式转换占位**见 §8.1。

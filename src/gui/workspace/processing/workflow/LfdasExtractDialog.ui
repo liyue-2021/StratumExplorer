@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>LfdasExtractDialog</class>
+ <widget class="QDialog" name="LfdasExtractDialog">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>1000</width><height>560</height></rect></property>
+  <property name="minimumSize"><size><width>960</width><height>520</height></size></property>
+  <property name="windowTitle"><string>LF-DAS提取</string></property>
+  <property name="styleSheet"><string notr="true">QDialog { background: #ECEFF1; }
+QGridLayout QLabel { color: #37474F; min-width: 72px; qproperty-alignment: 'AlignLeft | AlignVCenter'; }
+QLineEdit, QComboBox, QDoubleSpinBox, QSpinBox { background: white; min-height: 28px; padding: 2px 8px; }
+QPushButton { min-height: 28px; padding: 4px 12px; }
+QPushButton#btnPickInput, QPushButton#btnPickOutput {
+ min-width: 140px; max-width: 140px;
+}
+QPushButton#btnPickOutput { background: #E3F2FD; color: #1565C0; }</string></property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing"><number>14</number></property>
+   <property name="leftMargin"><number>24</number></property>
+   <property name="topMargin"><number>20</number></property>
+   <property name="rightMargin"><number>24</number></property>
+   <property name="bottomMargin"><number>16</number></property>
+   <item>
+    <layout class="QHBoxLayout" name="inputPathLayout">
+     <property name="spacing"><number>10</number></property>
+     <item>
+      <widget class="QPushButton" name="btnPickInput">
+       <property name="sizePolicy"><sizepolicy hsizetype="Fixed" vsizetype="Fixed"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property>
+       <property name="text"><string>选择文件...</string></property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="editInputPath">
+       <property name="readOnly"><bool>true</bool></property>
+       <property name="placeholderText"><string>未选择</string></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QGridLayout" name="gridLayout">
+     <property name="leftMargin"><number>0</number></property>
+     <property name="topMargin"><number>0</number></property>
+     <property name="rightMargin"><number>0</number></property>
+     <property name="bottomMargin"><number>0</number></property>
+     <property name="horizontalSpacing"><number>10</number></property>
+     <property name="verticalSpacing"><number>12</number></property>
+     <item row="0" column="0"><widget class="QLabel" name="labelFilterSuffix"><property name="text"><string>过滤后缀</string></property></widget></item>
+     <item row="0" column="1"><widget class="QComboBox" name="comboFilterSuffix"><item><property name="text"><string>Off</string></property></item><item><property name="text"><string>On</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="0" column="2"><widget class="QLabel" name="labelSuffix"><property name="text"><string>后缀</string></property></widget></item>
+     <item row="0" column="3"><widget class="QComboBox" name="comboSuffix"><item><property name="text"><string>.osa</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="0" column="4"><widget class="QLabel" name="labelFormat"><property name="text"><string>格式</string></property></widget></item>
+     <item row="0" column="5"><widget class="QComboBox" name="comboFormat"><item><property name="text"><string>OSA by OptaSoft</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="1" column="0"><widget class="QLabel" name="labelDataType"><property name="text"><string>数据类型</string></property></widget></item>
+     <item row="1" column="1"><widget class="QComboBox" name="comboDataType"><item><property name="text"><string>Raw</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="1" column="2"><widget class="QLabel" name="labelFilterMode"><property name="text"><string>滤波模式</string></property></widget></item>
+     <item row="1" column="3" colspan="3"><widget class="QComboBox" name="comboFilterMode"><item><property name="text"><string>Lowpass</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="2" column="0"><widget class="QLabel" name="labelFLow"><property name="text"><string>低频截止 [Hz]</string></property></widget></item>
+     <item row="2" column="1"><widget class="QDoubleSpinBox" name="spinFLow"><property name="decimals"><number>2</number></property><property name="maximum"><double>999999999.000000000000000</double></property></widget></item>
+     <item row="2" column="2"><widget class="QLabel" name="labelFHigh"><property name="text"><string>高频截止 [Hz]</string></property></widget></item>
+     <item row="2" column="3"><widget class="QDoubleSpinBox" name="spinFHigh"><property name="decimals"><number>2</number></property><property name="maximum"><double>999999999.000000000000000</double></property><property name="value"><double>1.000000000000000</double></property></widget></item>
+     <item row="2" column="4"><widget class="QLabel" name="labelCorner"><property name="text"><string>拐角数</string></property></widget></item>
+     <item row="2" column="5"><widget class="QSpinBox" name="spinCorner"><property name="maximum"><number>9999</number></property><property name="value"><number>4</number></property></widget></item>
+     <item row="3" column="0"><widget class="QLabel" name="labelZeroPhaseMode"><property name="text"><string>零相位</string></property></widget></item>
+     <item row="3" column="1"><widget class="QComboBox" name="comboZeroPhaseMode"><item><property name="text"><string>True</string></property></item><item><property name="text"><string>False</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="3" column="2"><widget class="QLabel" name="labelTimeFilter"><property name="text"><string>时间方向滤波</string></property></widget></item>
+     <item row="3" column="3"><widget class="QComboBox" name="comboTimeFilter"><item><property name="text"><string>On</string></property></item><item><property name="text"><string>Off</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="3" column="4"><widget class="QLabel" name="labelTimeFilterType"><property name="text"><string>滤波器</string></property></widget></item>
+     <item row="3" column="5"><widget class="QComboBox" name="comboTimeFilterType"><item><property name="text"><string>Averaging</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="4" column="0"><widget class="QLabel" name="labelDataAxis"><property name="text"><string>数据轴</string></property></widget></item>
+     <item row="4" column="1"><widget class="QSpinBox" name="spinDataAxis"><property name="maximum"><number>9999</number></property></widget></item>
+     <item row="4" column="2"><widget class="QLabel" name="labelDownFactor"><property name="text"><string>降采样因子</string></property></widget></item>
+     <item row="4" column="3"><widget class="QSpinBox" name="spinDownFactor"><property name="minimum"><number>1</number></property><property name="maximum"><number>999999</number></property><property name="value"><number>10</number></property></widget></item>
+     <item row="4" column="4"><widget class="QLabel" name="labelFirType"><property name="text"><string>滤波器类型</string></property></widget></item>
+     <item row="4" column="5"><widget class="QComboBox" name="comboFirType"><item><property name="text"><string>fir</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="5" column="0"><widget class="QLabel" name="labelFirOrder"><property name="text"><string>阶数</string></property></widget></item>
+     <item row="5" column="1"><widget class="QSpinBox" name="spinFirOrder"><property name="maximum"><number>999999</number></property><property name="value"><number>200</number></property></widget></item>
+     <item row="5" column="2"><widget class="QLabel" name="labelZeroPhaseTime"><property name="text"><string>零相位</string></property></widget></item>
+     <item row="5" column="3"><widget class="QComboBox" name="comboZeroPhaseTime"><item><property name="text"><string>True</string></property></item><item><property name="text"><string>False</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="5" column="4"><widget class="QLabel" name="labelTimeWinLen"><property name="text"><string>时窗长度 [us]</string></property></widget></item>
+     <item row="5" column="5"><widget class="QSpinBox" name="spinTimeWinLen"><property name="maximum"><number>2147483647</number></property><property name="value"><number>1000000</number></property></widget></item>
+     <item row="6" column="0"><widget class="QLabel" name="labelTimeOverlap"><property name="text"><string>重叠长度 [us]</string></property></widget></item>
+     <item row="6" column="1"><widget class="QSpinBox" name="spinTimeOverlap"><property name="maximum"><number>2147483647</number></property></widget></item>
+     <item row="6" column="2"><widget class="QLabel" name="labelDepthFilter"><property name="text"><string>深度方向滤波</string></property></widget></item>
+     <item row="6" column="3"><widget class="QComboBox" name="comboDepthFilter"><item><property name="text"><string>On</string></property></item><item><property name="text"><string>Off</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="6" column="4"><widget class="QLabel" name="labelDepthFilterType"><property name="text"><string>滤波器</string></property></widget></item>
+     <item row="6" column="5"><widget class="QComboBox" name="comboDepthFilterType"><item><property name="text"><string>Median</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="7" column="0"><widget class="QLabel" name="labelChannelWinLen"><property name="text"><string>通道时窗长度</string></property></widget></item>
+     <item row="7" column="1"><widget class="QSpinBox" name="spinChannelWinLen"><property name="maximum"><number>999999</number></property><property name="value"><number>5</number></property></widget></item>
+     <item row="7" column="2"><widget class="QLabel" name="labelIoParallel"><property name="text"><string>I/O 并行</string></property></widget></item>
+     <item row="7" column="3"><widget class="QComboBox" name="comboIoParallel"><item><property name="text"><string>Off</string></property></item><item><property name="text"><string>On</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="7" column="4"><widget class="QLabel" name="labelNaming"><property name="text"><string>命名</string></property></widget></item>
+     <item row="7" column="5"><widget class="QComboBox" name="comboNaming"><item><property name="text"><string>DateTime</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="outputPathLayout">
+     <property name="spacing"><number>10</number></property>
+     <item>
+      <widget class="QPushButton" name="btnPickOutput">
+       <property name="sizePolicy"><sizepolicy hsizetype="Fixed" vsizetype="Fixed"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property>
+       <property name="text"><string>选择输出文件夹...</string></property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="editOutputPath">
+       <property name="readOnly"><bool>true</bool></property>
+       <property name="placeholderText"><string>未选择</string></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="actionLayout">
+     <item>
+      <widget class="QPushButton" name="btnExtract">
+       <property name="minimumSize"><size><width>120</width><height>36</height></size></property>
+       <property name="maximumSize"><size><width>120</width><height>36</height></size></property>
+       <property name="styleSheet"><string notr="true">QPushButton { background: white; color: #1565C0; font-weight: bold;
+ border: 1px solid #B0BEC5; border-radius: 4px; }
+QPushButton:hover:enabled { background: #E3F2FD; }
+QPushButton:disabled { color: #90A4AE; background: #ECEFF1; }</string></property>
+       <property name="text"><string>提取</string></property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="labelStatus">
+       <property name="styleSheet"><string notr="true">color: #546E7A; padding: 4px 0;</string></property>
+       <property name="text"><string>请填写参数后点击「提取」</string></property>
+       <property name="wordWrap"><bool>true</bool></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="footerLayout">
+     <item><spacer name="footerSpacer"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
+     <item>
+      <widget class="QDialogButtonBox" name="buttonBox">
+       <property name="standardButtons"><set>QDialogButtonBox::StandardButton::Cancel</set></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

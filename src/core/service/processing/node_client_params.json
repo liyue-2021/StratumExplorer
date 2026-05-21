@@ -1,78 +1,167 @@
 {
   "_fileMeta": {
-    "note": "23 个节点参数来自甲方 Excel；19 个节点 fictional=true 为行业通用模板，参数暂为虚构，保留不删，待甲方确认后替换"
+    "note": "以甲方属性参数表为准；虚构样例弹窗已停用（configDialog 已移除），.ui 文件保留待后续确认"
+  },
+  "input.data_input": {
+    "order": ["input_files", "file_format"],
+    "params": {
+      "input_files": { "type": "array", "label": "输入文件", "default": [] },
+      "file_format": { "type": "string", "label": "文件格式", "default": "LAS" }
+    },
+    "note": "工作流入口；当前仅支持多选 LAS，file_format 预留扩展"
   },
   "preprocess.format_convert": {
-    "fictional": true,
-    "fictionalNote": "行业通用模板，参数暂为虚构，待甲方确认",
-    "order": ["import_type", "output_type", "time_delay", "naming_rule", "output_path"],
+    "note": "输入来自上游节点连线；属性面板仅配置输出",
+    "order": ["output_type", "output_dir"],
     "params": {
-      "import_type": { "type": "string", "label": "文件导入类型", "default": "hdf5" },
-      "output_type": { "type": "string", "label": "输出文件类型", "default": "hdf5" },
-      "time_delay": { "type": "float", "label": "时延", "default": 0.0 },
-      "naming_rule": { "type": "string", "label": "文件命名", "default": "" },
-      "output_path": { "type": "string", "label": "输出路径", "default": "" }
+      "output_type": { "type": "string", "label": "输出格式", "default": "H5" },
+      "output_dir": { "type": "string", "label": "输出目录", "default": "" }
     }
   },
   "preprocess.depth_correct": {
-    "order": ["interp_method", "depth_step", "bound"],
+    "note": "Excel 字段 interp_method/depth_step/bound 待与后端对齐",
+    "order": [
+      "input_path", "format", "das_data_type", "depth_offset_m", "depth_scale",
+      "write_back", "output_format", "output_naming", "output_path"
+    ],
     "params": {
-      "interp_method": { "type": "string", "label": "插值方法", "default": "linear" },
-      "depth_step": { "type": "float", "label": "深度步长", "default": 0.5 },
-      "bound": { "type": "string", "label": "边界处理方式", "default": "reflect" }
+      "input_path": { "type": "string", "label": "输入文件", "default": "" },
+      "format": { "type": "string", "label": "格式", "default": "OSA by OptaSoft" },
+      "das_data_type": { "type": "string", "label": "DAS数据类型", "default": "Raw" },
+      "depth_offset_m": { "type": "float", "label": "深度偏移[m]", "default": 0.0 },
+      "depth_scale": { "type": "float", "label": "深度缩放系数", "default": 0.98269 },
+      "write_back": { "type": "string", "label": "原文件写入校正后深度", "default": "Off" },
+      "output_format": { "type": "string", "label": "输出格式", "default": ".osa" },
+      "output_naming": { "type": "string", "label": "输出文件名命名", "default": "DateTime" },
+      "output_path": { "type": "string", "label": "输出文件夹", "default": "" }
     }
   },
   "preprocess.depth_time_correct": {
-    "order": ["time_offset", "time_scale", "depth_offset", "depth_scale"],
+    "note": "Excel 字段 time_offset/time_scale 等待与后端对齐",
+    "order": [
+      "input_path", "format", "das_data_type", "time_offset_s", "time_scale",
+      "write_back", "output_format", "output_naming", "output_path"
+    ],
     "params": {
-      "time_offset": { "type": "float", "label": "时间偏移", "default": 0.0 },
-      "time_scale": { "type": "float", "label": "时间缩放", "default": 1.0 },
-      "depth_offset": { "type": "float", "label": "深度偏移", "default": 0.0 },
-      "depth_scale": { "type": "float", "label": "深度缩放", "default": 1.0 }
+      "input_path": { "type": "string", "label": "输入文件", "default": "" },
+      "format": { "type": "string", "label": "格式", "default": "OSA by OptaSoft" },
+      "das_data_type": { "type": "string", "label": "DAS数据类型", "default": "Raw" },
+      "time_offset_s": { "type": "float", "label": "时间偏移[s]", "default": 28800.0 },
+      "time_scale": { "type": "float", "label": "时间缩放系数", "default": 1.0 },
+      "write_back": { "type": "string", "label": "原文件写入校正后深度", "default": "Off" },
+      "output_format": { "type": "string", "label": "输出格式", "default": ".osa" },
+      "output_naming": { "type": "string", "label": "输出文件命名", "default": "DateTime" },
+      "output_path": { "type": "string", "label": "输出文件夹", "default": "" }
     }
   },
   "preprocess.data_crop": {
-    "order": ["depth_min", "depth_max", "time_min", "time_max"],
+    "note": "Excel 字段 depth_min/time_max 等待与后端对齐",
+    "order": [
+      "input_path", "filter_suffix", "suffix", "format", "das_data_format",
+      "channel_clip", "channel_mode", "depth_min", "depth_max",
+      "sample_clip", "sample_mode", "time_min", "time_max", "output_path"
+    ],
     "params": {
-      "depth_min": { "type": "float", "label": "最小深度", "default": 0.0 },
-      "depth_max": { "type": "float", "label": "最大深度", "default": 5000.0 },
-      "time_min": { "type": "float", "label": "起始时间", "default": 0.0 },
-      "time_max": { "type": "float", "label": "结束时间", "default": 86400.0 }
+      "input_path": { "type": "string", "label": "输入文件", "default": "" },
+      "filter_suffix": { "type": "string", "label": "过滤后缀", "default": "Off" },
+      "suffix": { "type": "string", "label": "后缀", "default": ".osa" },
+      "format": { "type": "string", "label": "格式", "default": "OSA by OptaSoft" },
+      "das_data_format": { "type": "string", "label": "DAS数据格式", "default": "Raw" },
+      "channel_clip": { "type": "string", "label": "通道裁剪", "default": "On" },
+      "channel_mode": { "type": "string", "label": "通道模式", "default": "Length" },
+      "depth_min": { "type": "float", "label": "深度最小值", "default": 0.0 },
+      "depth_max": { "type": "float", "label": "深度最大值", "default": 1000.0 },
+      "sample_clip": { "type": "string", "label": "采样点裁剪", "default": "On" },
+      "sample_mode": { "type": "string", "label": "采样点模式", "default": "Time" },
+      "time_min": { "type": "float", "label": "时间最小值", "default": 0.0 },
+      "time_max": { "type": "float", "label": "时间最大值", "default": 1000.0 },
+      "output_path": { "type": "string", "label": "输出文件夹", "default": "" }
     }
   },
   "preprocess.data_merge": {
-    "order": ["concat_axis", "channel_range", "sample_points", "fill_missing", "output_filename"],
+    "note": "Excel 字段 concat_axis/channel_range 等待与后端对齐",
+    "order": [
+      "mode", "input_folder", "input_file", "filter_suffix", "suffix",
+      "processing_priority", "first_dimension", "fill_missing",
+      "channel_count", "sample_count", "channel_start", "channel_end",
+      "output_filename", "output_path"
+    ],
     "params": {
-      "concat_axis": { "type": "string", "label": "拼接轴", "default": "depth" },
-      "channel_range": { "type": "array", "label": "通道范围", "default": [] },
-      "sample_points": { "type": "int", "label": "采样点数", "default": 0 },
-      "fill_missing": { "type": "bool", "label": "缺失值填充", "default": false },
-      "output_filename": { "type": "string", "label": "输出文件名", "default": "" }
+      "mode": { "type": "string", "label": "模式", "default": "Directory" },
+      "input_folder": { "type": "string", "label": "输入文件夹", "default": "" },
+      "input_file": { "type": "string", "label": "输入文件", "default": "" },
+      "filter_suffix": { "type": "string", "label": "过滤后缀", "default": "Off" },
+      "suffix": { "type": "string", "label": "后缀", "default": ".osa" },
+      "processing_priority": { "type": "string", "label": "处理优先项", "default": "Precision" },
+      "first_dimension": { "type": "string", "label": "第一维度", "default": "Time" },
+      "fill_missing": { "type": "string", "label": "补足缺失数据", "default": "On" },
+      "channel_count": { "type": "int", "label": "通道数目", "default": 100 },
+      "sample_count": { "type": "int", "label": "采样点数目", "default": 60000 },
+      "channel_start": { "type": "int", "label": "通道起始值", "default": 0 },
+      "channel_end": { "type": "int", "label": "通道终止值", "default": 100 },
+      "output_filename": { "type": "string", "label": "输出文件名称", "default": "merged_" },
+      "output_path": { "type": "string", "label": "输出文件夹", "default": "" }
     }
   },
   "preprocess.das_convert": {
-    "order": ["fs", "transform_mode", "norm_min", "norm_max", "win_len", "clip_value"],
+    "note": "Excel 字段 fs/clip_value 等待与后端对齐",
+    "order": [
+      "input_path", "format", "das_data_type", "transform_mode", "value_unit",
+      "normalization", "normalization_type", "norm_min", "norm_max",
+      "processing_dimension", "win_len_us", "overlap_len_us", "output_path"
+    ],
     "params": {
-      "fs": { "type": "float", "label": "采样率", "default": 1000.0 },
-      "transform_mode": { "type": "string", "label": "转换模式", "default": "normalize" },
-      "norm_min": { "type": "float", "label": "归一化最小值", "default": 0.0 },
-      "norm_max": { "type": "float", "label": "归一化最大值", "default": 1.0 },
-      "win_len": { "type": "int", "label": "时窗长度", "default": 256 },
-      "clip_value": { "type": "float", "label": "幅值裁剪阈值", "default": 0.0 }
+      "input_path": { "type": "string", "label": "输入文件", "default": "" },
+      "format": { "type": "string", "label": "格式", "default": "OSA by OptaSoft" },
+      "das_data_type": { "type": "string", "label": "DAS数据类型", "default": "Raw" },
+      "transform_mode": { "type": "string", "label": "变换模式", "default": "RMS" },
+      "value_unit": { "type": "string", "label": "数值单位", "default": "Magnitude" },
+      "normalization": { "type": "string", "label": "归一化", "default": "On" },
+      "normalization_type": { "type": "string", "label": "归一化类型", "default": "Trace" },
+      "norm_min": { "type": "float", "label": "最小值", "default": 0.0 },
+      "norm_max": { "type": "float", "label": "最大值", "default": 1.0 },
+      "processing_dimension": { "type": "string", "label": "处理维度", "default": "Time Only" },
+      "win_len_us": { "type": "int", "label": "时窗长度[us]", "default": 1000000 },
+      "overlap_len_us": { "type": "int", "label": "重叠长度[us]", "default": 0 },
+      "output_path": { "type": "string", "label": "输出文件夹", "default": "" }
     }
   },
   "preprocess.lfdas_extract": {
-    "order": ["f_low", "f_high", "fs", "filter_type", "win_len", "order", "down_factor", "parallel_io", "window_type"],
+    "note": "Excel 字段 fs/window_type 等待与后端对齐",
+    "order": [
+      "input_path", "filter_suffix", "suffix", "format", "data_type",
+      "filter_mode", "f_low", "f_high", "corner", "zero_phase_mode",
+      "time_filter", "time_filter_type", "data_axis", "down_factor", "fir_type", "fir_order",
+      "zero_phase_time", "time_win_len_us", "time_overlap_us",
+      "depth_filter", "depth_filter_type", "channel_win_len",
+      "io_parallel", "naming", "output_path"
+    ],
     "params": {
-      "f_low": { "type": "float", "label": "低频截止频率", "default": 1.0 },
-      "f_high": { "type": "float", "label": "高频截止频率", "default": 100.0 },
-      "fs": { "type": "float", "label": "采样率", "default": 1000.0 },
-      "filter_type": { "type": "string", "label": "滤波器类型", "default": "butterworth" },
-      "win_len": { "type": "int", "label": "时窗长度", "default": 256 },
-      "order": { "type": "int", "label": "滤波器阶数", "default": 4 },
-      "down_factor": { "type": "int", "label": "降采样因子", "default": 1 },
-      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true },
-      "window_type": { "type": "string", "label": "窗函数类型", "default": "hann" }
+      "input_path": { "type": "string", "label": "输入文件", "default": "" },
+      "filter_suffix": { "type": "string", "label": "过滤后缀", "default": "Off" },
+      "suffix": { "type": "string", "label": "后缀", "default": ".osa" },
+      "format": { "type": "string", "label": "格式", "default": "OSA by OptaSoft" },
+      "data_type": { "type": "string", "label": "数据类型", "default": "Raw" },
+      "filter_mode": { "type": "string", "label": "滤波模式", "default": "Lowpass" },
+      "f_low": { "type": "float", "label": "低频截止[Hz]", "default": 0.0 },
+      "f_high": { "type": "float", "label": "高频截止[Hz]", "default": 1.0 },
+      "corner": { "type": "int", "label": "拐角数", "default": 4 },
+      "zero_phase_mode": { "type": "string", "label": "零相位", "default": "True" },
+      "time_filter": { "type": "string", "label": "时间方向滤波", "default": "On" },
+      "time_filter_type": { "type": "string", "label": "滤波器", "default": "Averaging" },
+      "data_axis": { "type": "int", "label": "数据轴", "default": 0 },
+      "down_factor": { "type": "int", "label": "降采样因子", "default": 10 },
+      "fir_type": { "type": "string", "label": "滤波器类型", "default": "fir" },
+      "fir_order": { "type": "int", "label": "阶数", "default": 200 },
+      "zero_phase_time": { "type": "string", "label": "零相位", "default": "True" },
+      "time_win_len_us": { "type": "int", "label": "时窗长度[us]", "default": 1000000 },
+      "time_overlap_us": { "type": "int", "label": "重叠长度[us]", "default": 0 },
+      "depth_filter": { "type": "string", "label": "深度方向滤波", "default": "On" },
+      "depth_filter_type": { "type": "string", "label": "滤波器", "default": "Median" },
+      "channel_win_len": { "type": "int", "label": "通道时窗长度", "default": 5 },
+      "io_parallel": { "type": "string", "label": "I/O并行", "default": "Off" },
+      "naming": { "type": "string", "label": "命名", "default": "DateTime" },
+      "output_path": { "type": "string", "label": "输出文件夹", "default": "" }
     }
   },
   "preprocess.fk_analysis": {

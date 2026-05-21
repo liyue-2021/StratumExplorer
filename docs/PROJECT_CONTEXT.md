@@ -7,6 +7,8 @@
 
 **构建状态**：✅ EXITCODE=0
 
+**高 DPI**：`main.cpp` → `setupHiDpiBeforeQApplication()`；界面用布局器 + 图表 `Expanding`；字体用 `pointSize`（详见 `src/gui/workspace/processing/workflow/node_dialogs.README.md` §高 DPI）。
+
 ---
 
 ## 快速开始
@@ -34,6 +36,7 @@ git push origin master
 |------|------|
 | `docs/HANDOFF_CHECKLIST.md` | 进度记录、回归测试、待办 |
 | `docs/BACKEND_HANDOFF.md` | 与后端 EXE 对接（JSON 任务配置；业务 HDF5 归后端） |
+| `docs/BACKEND_TODOS.md` | 后端同事待办索引（`TODO(后端)` 汇总） |
 | `docs/MIGRATION_GUIDE.md` | 换电脑时的环境配置 |
 | `docs/node_specs.json` | 人工查阅用（**运行时不加载**，见 `docs/node_specs.README.md`） |
 | `node_client_params.json` | 属性面板参数（运行时加载） |

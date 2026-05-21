@@ -7,6 +7,13 @@ set(SOURCES
     EdgeItem.cpp
     NodePalette.cpp
     PlotDialog.cpp
+    FormatConvertDialog.cpp
+    DepthCorrectDialog.cpp
+    TimeCorrectDialog.cpp
+    DataCropDialog.cpp
+    DataMergeDialog.cpp
+    DasConvertDialog.cpp
+    LfdasExtractDialog.cpp
     LogDock.cpp
 )
 set(HEADERS
@@ -17,12 +24,29 @@ set(HEADERS
     EdgeItem.h
     NodePalette.h
     PlotDialog.h
+    FormatConvertDialog.h
+    DepthCorrectDialog.h
+    TimeCorrectDialog.h
+    DataCropDialog.h
+    DataMergeDialog.h
+    DasConvertDialog.h
+    LfdasExtractDialog.h
     LogDock.h
+)
+set(FORMS
+    FormatConvertDialog.ui
+    DepthCorrectDialog.ui
+    TimeCorrectDialog.ui
+    DataCropDialog.ui
+    DataMergeDialog.ui
+    DasConvertDialog.ui
+    LfdasExtractDialog.ui
 )
 
 add_library(gui_workspace_processing_workflow STATIC
     ${SOURCES}
     ${HEADERS}
+    ${FORMS}
 )
 
 target_include_directories(gui_workspace_processing_workflow PUBLIC

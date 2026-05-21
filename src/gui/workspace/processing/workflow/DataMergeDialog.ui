@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DataMergeDialog</class>
+ <widget class="QDialog" name="DataMergeDialog">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>640</width><height>580</height></rect></property>
+  <property name="minimumSize"><size><width>600</width><height>520</height></size></property>
+  <property name="windowTitle"><string>数据合并</string></property>
+  <property name="styleSheet"><string notr="true">QDialog { background: #ECEFF1; }
+QGridLayout QLabel { color: #37474F; min-width: 88px; qproperty-alignment: 'AlignLeft | AlignVCenter'; }
+QLineEdit, QComboBox, QSpinBox { background: white; min-height: 28px; padding: 2px 8px; }
+QPushButton { min-height: 28px; padding: 4px 12px; }
+QPushButton#btnPickFolder, QPushButton#btnPickFile, QPushButton#btnPickOutput {
+ min-width: 140px; max-width: 140px;
+}
+QPushButton#btnPickOutput { background: #E3F2FD; color: #1565C0; }</string></property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing"><number>14</number></property>
+   <property name="leftMargin"><number>24</number></property>
+   <property name="topMargin"><number>20</number></property>
+   <property name="rightMargin"><number>24</number></property>
+   <property name="bottomMargin"><number>16</number></property>
+   <item>
+    <layout class="QGridLayout" name="gridLayout">
+     <property name="leftMargin"><number>0</number></property>
+     <property name="topMargin"><number>0</number></property>
+     <property name="rightMargin"><number>0</number></property>
+     <property name="bottomMargin"><number>0</number></property>
+     <property name="horizontalSpacing"><number>10</number></property>
+     <property name="verticalSpacing"><number>12</number></property>
+     <item row="0" column="0">
+      <widget class="QLabel" name="labelMode">
+       <property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property>
+       <property name="text"><string>模式</string></property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QComboBox" name="comboMode">
+       <item><property name="text"><string>Directory</string></property></item>
+       <item><property name="text"><string>File</string></property></item>
+       <item><property name="text"><string>选项二</string></property></item>
+      </widget>
+     </item>
+     <item row="0" column="2">
+      <widget class="QLabel" name="labelFilterSuffix">
+       <property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property>
+       <property name="text"><string>过滤后缀</string></property>
+      </widget>
+     </item>
+     <item row="0" column="3">
+      <widget class="QComboBox" name="comboFilterSuffix">
+       <item><property name="text"><string>Off</string></property></item>
+       <item><property name="text"><string>On</string></property></item>
+       <item><property name="text"><string>选项二</string></property></item>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QPushButton" name="btnPickFolder">
+       <property name="sizePolicy"><sizepolicy hsizetype="Fixed" vsizetype="Fixed"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property>
+       <property name="text"><string>选择文件夹...</string></property>
+      </widget>
+     </item>
+     <item row="1" column="1" colspan="3">
+      <widget class="QLineEdit" name="editFolderPath">
+       <property name="readOnly"><bool>true</bool></property>
+       <property name="placeholderText"><string>未选择文件夹</string></property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QPushButton" name="btnPickFile">
+       <property name="sizePolicy"><sizepolicy hsizetype="Fixed" vsizetype="Fixed"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property>
+       <property name="text"><string>选择文件...</string></property>
+      </widget>
+     </item>
+     <item row="2" column="1" colspan="3">
+      <widget class="QLineEdit" name="editFilePath">
+       <property name="readOnly"><bool>true</bool></property>
+       <property name="placeholderText"><string>未选择文件</string></property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="labelSuffix">
+       <property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property>
+       <property name="text"><string>后缀</string></property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QComboBox" name="comboSuffix">
+       <item><property name="text"><string>.osa</string></property></item>
+       <item><property name="text"><string>选项二</string></property></item>
+      </widget>
+     </item>
+     <item row="3" column="2">
+      <widget class="QLabel" name="labelPriority">
+       <property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property>
+       <property name="text"><string>处理优先项</string></property>
+      </widget>
+     </item>
+     <item row="3" column="3">
+      <widget class="QComboBox" name="comboPriority">
+       <item><property name="text"><string>Precision</string></property></item>
+       <item><property name="text"><string>选项二</string></property></item>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="labelFirstDim">
+       <property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property>
+       <property name="text"><string>第一维度</string></property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QComboBox" name="comboFirstDim">
+       <item><property name="text"><string>Time</string></property></item>
+       <item><property name="text"><string>Depth</string></property></item>
+       <item><property name="text"><string>选项二</string></property></item>
+      </widget>
+     </item>
+     <item row="4" column="2">
+      <widget class="QLabel" name="labelFillMissing">
+       <property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property>
+       <property name="text"><string>补足缺失数据</string></property>
+      </widget>
+     </item>
+     <item row="4" column="3">
+      <widget class="QComboBox" name="comboFillMissing">
+       <item><property name="text"><string>On</string></property></item>
+       <item><property name="text"><string>Off</string></property></item>
+       <item><property name="text"><string>选项二</string></property></item>
+      </widget>
+     </item>
+     <item row="5" column="0">
+      <widget class="QLabel" name="labelChannelCount">
+       <property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property>
+       <property name="text"><string>通道数目</string></property>
+      </widget>
+     </item>
+     <item row="5" column="1">
+      <widget class="QSpinBox" name="spinChannelCount">
+       <property name="maximum"><number>999999999</number></property>
+       <property name="value"><number>100</number></property>
+      </widget>
+     </item>
+     <item row="5" column="2">
+      <widget class="QLabel" name="labelSampleCount">
+       <property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property>
+       <property name="text"><string>采样点数目</string></property>
+      </widget>
+     </item>
+     <item row="5" column="3">
+      <widget class="QSpinBox" name="spinSampleCount">
+       <property name="maximum"><number>999999999</number></property>
+       <property name="value"><number>60000</number></property>
+      </widget>
+     </item>
+     <item row="6" column="0">
+      <widget class="QLabel" name="labelChannelStart">
+       <property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property>
+       <property name="text"><string>通道起始值</string></property>
+      </widget>
+     </item>
+     <item row="6" column="1">
+      <widget class="QSpinBox" name="spinChannelStart">
+       <property name="maximum"><number>999999999</number></property>
+      </widget>
+     </item>
+     <item row="6" column="2">
+      <widget class="QLabel" name="labelChannelEnd">
+       <property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property>
+       <property name="text"><string>通道终止值</string></property>
+      </widget>
+     </item>
+     <item row="6" column="3">
+      <widget class="QSpinBox" name="spinChannelEnd">
+       <property name="maximum"><number>999999999</number></property>
+       <property name="value"><number>100</number></property>
+      </widget>
+     </item>
+     <item row="7" column="0">
+      <widget class="QLabel" name="labelOutputName">
+       <property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property>
+       <property name="text"><string>输出文件名称</string></property>
+      </widget>
+     </item>
+     <item row="7" column="1" colspan="3">
+      <widget class="QLineEdit" name="editOutputName">
+       <property name="text"><string>merged_</string></property>
+      </widget>
+     </item>
+     <item row="8" column="0">
+      <widget class="QPushButton" name="btnPickOutput">
+       <property name="sizePolicy"><sizepolicy hsizetype="Fixed" vsizetype="Fixed"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property>
+       <property name="text"><string>选择输出文件夹...</string></property>
+      </widget>
+     </item>
+     <item row="8" column="1" colspan="3">
+      <widget class="QLineEdit" name="editOutputPath">
+       <property name="readOnly"><bool>true</bool></property>
+       <property name="placeholderText"><string>未选择</string></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="actionLayout">
+     <property name="spacing"><number>12</number></property>
+     <item>
+      <widget class="QPushButton" name="btnMerge">
+       <property name="minimumSize"><size><width>120</width><height>36</height></size></property>
+       <property name="maximumSize"><size><width>120</width><height>36</height></size></property>
+       <property name="styleSheet"><string notr="true">QPushButton { background: white; color: #1565C0; font-weight: bold;
+ border: 1px solid #B0BEC5; border-radius: 4px; }
+QPushButton:hover:enabled { background: #E3F2FD; }
+QPushButton:disabled { color: #90A4AE; background: #ECEFF1; }</string></property>
+       <property name="text"><string>合并</string></property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="labelStatus">
+       <property name="styleSheet"><string notr="true">color: #546E7A; padding: 4px 0;</string></property>
+       <property name="text"><string>请填写参数后点击「合并」</string></property>
+       <property name="wordWrap"><bool>true</bool></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="footerLayout">
+     <item><spacer name="footerSpacer"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
+     <item>
+      <widget class="QDialogButtonBox" name="buttonBox">
+       <property name="standardButtons"><set>QDialogButtonBox::StandardButton::Cancel</set></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

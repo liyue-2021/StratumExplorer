@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>TimeCorrectDialog</class>
+ <widget class="QDialog" name="TimeCorrectDialog">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>620</width><height>480</height></rect></property>
+  <property name="minimumSize"><size><width>560</width><height>420</height></size></property>
+  <property name="windowTitle"><string>时间矫正</string></property>
+  <property name="styleSheet"><string notr="true">QDialog { background: #ECEFF1; }
+QGridLayout QLabel { color: #37474F; min-width: 88px; qproperty-alignment: 'AlignLeft | AlignVCenter'; }
+QLineEdit, QComboBox, QDoubleSpinBox { background: white; min-height: 28px; padding: 2px 8px; }
+QPushButton { min-height: 28px; padding: 4px 12px; }
+QPushButton#btnPickOutput { background: #E3F2FD; color: #1565C0; }</string></property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing"><number>12</number></property>
+   <property name="leftMargin"><number>20</number></property>
+   <property name="topMargin"><number>20</number></property>
+   <property name="rightMargin"><number>20</number></property>
+   <property name="bottomMargin"><number>16</number></property>
+   <item>
+    <layout class="QHBoxLayout" name="inputPathLayout">
+     <item>
+      <widget class="QPushButton" name="btnPickInput">
+       <property name="minimumSize"><size><width>140</width><height>32</height></size></property>
+       <property name="maximumSize"><size><width>140</width><height>32</height></size></property>
+       <property name="text"><string>选择文件...</string></property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="editInputPath">
+       <property name="readOnly"><bool>true</bool></property>
+       <property name="placeholderText"><string>未选择</string></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QGridLayout" name="gridLayout">
+     <property name="horizontalSpacing"><number>12</number></property>
+     <property name="verticalSpacing"><number>10</number></property>
+     <item row="0" column="0"><widget class="QLabel" name="labelFormat"><property name="text"><string>格式</string></property></widget></item>
+     <item row="0" column="1"><widget class="QComboBox" name="comboFormat"><item><property name="text"><string>OSA by OptaSoft</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="0" column="2"><widget class="QLabel" name="labelDasDataType"><property name="text"><string>DAS数据类型</string></property></widget></item>
+     <item row="0" column="3"><widget class="QComboBox" name="comboDasDataType"><item><property name="text"><string>Raw</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="1" column="0"><widget class="QLabel" name="labelTimeOffset"><property name="text"><string>时间偏移 [s]</string></property></widget></item>
+     <item row="1" column="1"><widget class="QDoubleSpinBox" name="spinTimeOffset"><property name="decimals"><number>2</number></property><property name="minimum"><double>-999999999.000000000000000</double></property><property name="maximum"><double>999999999.000000000000000</double></property><property name="value"><double>28800.000000000000000</double></property></widget></item>
+     <item row="1" column="2"><widget class="QLabel" name="labelTimeScale"><property name="text"><string>时间缩放系数</string></property></widget></item>
+     <item row="1" column="3"><widget class="QDoubleSpinBox" name="spinTimeScale"><property name="decimals"><number>5</number></property><property name="minimum"><double>0.000010000000000</double></property><property name="maximum"><double>999999.000000000000000</double></property><property name="value"><double>1.000000000000000</double></property></widget></item>
+     <item row="2" column="0"><widget class="QLabel" name="labelWriteBack"><property name="text"><string>原文件写入校正后深度</string></property></widget></item>
+     <item row="2" column="1" colspan="3"><widget class="QComboBox" name="comboWriteBack"><item><property name="text"><string>Off</string></property></item><item><property name="text"><string>On</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="3" column="0"><widget class="QLabel" name="labelOutputFormat"><property name="text"><string>输出格式</string></property></widget></item>
+     <item row="3" column="1"><widget class="QComboBox" name="comboOutputFormat"><item><property name="text"><string>.osa</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="3" column="2"><widget class="QLabel" name="labelOutputNaming"><property name="text"><string>输出文件命名</string></property></widget></item>
+     <item row="3" column="3"><widget class="QComboBox" name="comboOutputNaming"><item><property name="text"><string>DateTime</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="outputPathLayout">
+     <item>
+      <widget class="QPushButton" name="btnPickOutput">
+       <property name="minimumSize"><size><width>140</width><height>32</height></size></property>
+       <property name="maximumSize"><size><width>140</width><height>32</height></size></property>
+       <property name="text"><string>选择输出文件夹...</string></property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="editOutputPath">
+       <property name="readOnly"><bool>true</bool></property>
+       <property name="placeholderText"><string>未选择</string></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="actionLayout">
+     <item>
+      <widget class="QPushButton" name="btnCorrect">
+       <property name="minimumSize"><size><width>120</width><height>36</height></size></property>
+       <property name="maximumSize"><size><width>120</width><height>36</height></size></property>
+       <property name="styleSheet"><string notr="true">QPushButton { background: white; color: #1565C0; font-weight: bold;
+ border: 1px solid #B0BEC5; border-radius: 4px; }
+QPushButton:hover:enabled { background: #E3F2FD; }
+QPushButton:disabled { color: #90A4AE; background: #ECEFF1; }</string></property>
+       <property name="text"><string>校正</string></property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="labelStatus">
+       <property name="styleSheet"><string notr="true">color: #546E7A; padding: 4px 0;</string></property>
+       <property name="text"><string>请填写参数后点击「校正」</string></property>
+       <property name="wordWrap"><bool>true</bool></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons"><set>QDialogButtonBox::StandardButton::Cancel</set></property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

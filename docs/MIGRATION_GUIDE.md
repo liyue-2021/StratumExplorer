@@ -70,7 +70,7 @@ Test-Path "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\
 
 ```powershell
 # 构建
-cmd /c D:\pro\Demo\oilPro\build_oilpro.cmd
+cmd /c tools\build\build_oilpro.cmd
 
 # 查看日志
 Get-Content tools\build\logs\build_oilpro.log -Tail 30

@@ -1,6 +1,5 @@
 #include "WorkflowEditorTab.h"
 #include "WorkflowScene.h"
-#include "PlotDialog.h"
 #include "LogDock.h"
 #include "WorkflowView.h"
 #include "NodePalette.h"
@@ -19,6 +18,8 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QFile>
+#include <QFileInfo>
+#include <QDir>
 #include <QTimer>
 #include <QDebug>
 #include <QScrollArea>
@@ -28,6 +29,9 @@
 #include <QCheckBox>
 #include <QLayoutItem>
 #include <QToolButton>
+#include <QComboBox>
+#include <QPushButton>
+#include <QTextEdit>
 
 using namespace processing;
 using namespace processing::gui;
@@ -181,7 +185,7 @@ void WorkflowEditorTab::setupConnections()
 
     // 双击节点：若为 display.* 节点，弹出 QCustomPlot 可视化窗口
     connect(m_scene, &WorkflowScene::nodeDoubleClicked,
-            this, &WorkflowEditorTab::onNodeDoubleClicked); // 双击弹图表功能
+            this, &WorkflowEditorTab::onNodeDoubleClicked);
 
     // 引擎事件 → 状态栏 / 后台日志
     connect(m_engine, &IWorkflowEngine::nodeProgress, this,
@@ -300,44 +304,9 @@ void WorkflowEditorTab::onSelectionChanged()
 
 void WorkflowEditorTab::onNodeDoubleClicked(const QString &nodeId)
 {
-    if (nodeId.isEmpty() || !m_engine)
-        return;
-    NodeInstance info;
-    bool found = false;
-    for (const auto &n : m_engine->nodes())
-    {
-        if (n.instanceId == nodeId)
-        {
-            info = n;
-            found = true;
-            break;
-        }
-    }
-    if (!found)
-        return;
-
-    // 取节点最近一次的输出文件（引擎里维护，可能为空）
-    const QStringList outs = m_engine->outputsOf(nodeId);
-
-    auto *dlg = new PlotDialog(info.displayName, this);
-    dlg->setAttribute(Qt::WA_DeleteOnClose);
-
-    // ① display.* 节点：画曲线（暂用占位演示数据；后续 TODO 改成
-    //    解析 outs[0] 的 HDF5 → setSeries(...)）
-    if (info.typeId.startsWith("display."))
-    {
-        const int curveCount = (info.typeId == "display.merge") ? 3 : 1;
-        dlg->setDemoFromSeed(info.instanceId, curveCount);
-        dlg->setMetaInfo(outs, tr("演示数据，等真实管线接入后替换为实际曲线。"));
-    }
-    // ② 其他节点：默认只显示输出文件信息，便于"跑完了看到底产出了啥"
-    else
-    {
-        dlg->setMetaInfo(outs,
-                         tr("节点类型: %1   状态: %2")
-                             .arg(info.typeId, toString(m_engine->statusOf(nodeId))));
-    }
-    dlg->show();
+    Q_UNUSED(nodeId);
+    // 甲方确认前：不在双击时打开样例配置窗/图表窗，统一在右侧属性面板编辑
+    showStatus(tr("请在右侧属性面板编辑节点参数；样例弹窗 UI 已保留代码，待甲方确认后启用。"));
 }
 
 // 把当前节点的 params 转成 QFormLayout（按 QVariant 类型选 widget）
@@ -386,6 +355,8 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
     QMap<QString, QString> paramLabels;
     QStringList paramOrder;
     bool paramsFictional = false;
+    bool hidePropertyPanel = false;
+    QString configDialogId;
     QVariantMap displayParams = info.params;
     if (m_factory)
     {
@@ -396,11 +367,13 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
                 paramLabels = meta.paramLabels;
                 paramOrder = meta.paramOrder;
                 paramsFictional = meta.clientParamsFictional;
+                hidePropertyPanel = meta.hidePropertyPanel;
+                configDialogId = meta.configDialogId;
                 displayParams = meta.defaultParams;
                 for (auto it = info.params.constBegin(); it != info.params.constEnd(); ++it)
                     displayParams.insert(it.key(), it.value());
                 // 旧工作流/预设里 params 为空或不完整时，自动补齐并写回引擎
-                if (displayParams.size() > info.params.size())
+                if (!hidePropertyPanel && displayParams.size() > info.params.size())
                     m_engine->setNodeParams(id, displayParams);
                 break;
             }
@@ -417,6 +390,27 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
         m_paramsPanel);
     lblHead->setTextFormat(Qt::RichText);
     m_paramsForm->addRow(lblHead);
+
+    if (hidePropertyPanel)
+    {
+        auto *lblHint = new QLabel(tr("此节点暂不在右侧展示参数。"), m_paramsPanel);
+        lblHint->setWordWrap(true);
+        lblHint->setStyleSheet(QStringLiteral("color:#546E7A; padding: 8px 0;"));
+        m_paramsForm->addRow(lblHint);
+        return;
+    }
+
+    if (info.typeId == QLatin1String("input.data_input"))
+    {
+        rebuildDataInputParamForm(id, displayParams);
+        return;
+    }
+
+    if (info.typeId == QLatin1String("preprocess.format_convert"))
+    {
+        rebuildFormatConvertParamForm(id, displayParams);
+        return;
+    }
 
     if (displayParams.isEmpty())
     {
@@ -620,6 +614,234 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
         QString labelText = paramLabels.value(key, key);
         m_paramsForm->addRow(labelText, editor);
     }
+}
+
+void WorkflowEditorTab::rebuildDataInputParamForm(const QString &nodeId,
+                                                  const QVariantMap &displayParams)
+{
+    auto formatListText = [](const QVariant &val) -> QString
+    {
+        QStringList lines;
+        if (val.typeId() == QMetaType::QVariantList)
+        {
+            for (const QVariant &item : val.toList())
+            {
+                const QString path = item.toString().trimmed();
+                if (!path.isEmpty())
+                    lines << path;
+            }
+        }
+        return lines.join(QLatin1Char('\n'));
+    };
+
+    auto *btnPick = new QPushButton(tr("选择输入文件…"), m_paramsPanel);
+    btnPick->setToolTip(tr("当前仅支持 LAS（*.las）；后续可在参数表中扩展格式"));
+
+    auto *fileList = new QTextEdit(m_paramsPanel);
+    fileList->setReadOnly(true);
+    fileList->setMinimumHeight(120);
+    fileList->setPlaceholderText(tr("未选择文件"));
+    fileList->setPlainText(formatListText(displayParams.value(QStringLiteral("input_files"))));
+
+    m_paramsForm->addRow(tr("输入文件"), btnPick);
+    m_paramsForm->addRow(QString(), fileList);
+
+    const QString fmt = displayParams.value(QStringLiteral("file_format"), QStringLiteral("LAS")).toString();
+    auto *fmtLabel = new QLabel(fmt, m_paramsPanel);
+    fmtLabel->setStyleSheet(QStringLiteral("color:#546E7A;"));
+    m_paramsForm->addRow(tr("文件格式"), fmtLabel);
+
+    connect(btnPick, &QPushButton::clicked, this,
+            [this, nodeId, fileList, formatListText]()
+            {
+                const QStringList paths = QFileDialog::getOpenFileNames(
+                    this,
+                    tr("选择 LAS 文件"),
+                    QString(),
+                    tr("LAS 文件 (*.las);;所有文件 (*)"));
+                if (paths.isEmpty())
+                    return;
+
+                QVariantList files;
+                for (const QString &p : paths)
+                    files.append(p);
+
+                QVariantMap p;
+                for (const auto &n : m_engine->nodes())
+                {
+                    if (n.instanceId == nodeId)
+                    {
+                        p = n.params;
+                        break;
+                    }
+                }
+                p.insert(QStringLiteral("input_files"), files);
+                p.insert(QStringLiteral("file_format"), QStringLiteral("LAS"));
+                m_engine->setNodeParams(nodeId, p);
+                fileList->setPlainText(formatListText(files));
+                showStatus(tr("已选择 %1 个文件").arg(paths.size()));
+            });
+}
+
+void WorkflowEditorTab::rebuildFormatConvertParamForm(const QString &nodeId,
+                                                      const QVariantMap &displayParams)
+{
+    auto *hint = new QLabel(tr("输入数据由上游节点（如「数据输入」）连线提供。"), m_paramsPanel);
+    hint->setWordWrap(true);
+    hint->setStyleSheet(QStringLiteral("color:#546E7A; padding: 4px 0;"));
+    m_paramsForm->addRow(hint);
+
+    auto *comboOut = new QComboBox(m_paramsPanel);
+    comboOut->addItem(QStringLiteral("H5"));
+    const QString outType = displayParams.value(QStringLiteral("output_type"), QStringLiteral("H5")).toString();
+    const int idx = comboOut->findText(outType);
+    comboOut->setCurrentIndex(idx >= 0 ? idx : 0);
+
+    auto *row = new QWidget(m_paramsPanel);
+    auto *h = new QHBoxLayout(row);
+    h->setContentsMargins(0, 0, 0, 0);
+    h->setSpacing(4);
+    auto *leDir = new QLineEdit(displayParams.value(QStringLiteral("output_dir")).toString(), row);
+    leDir->setPlaceholderText(tr("请选择输出目录"));
+    auto *btnDir = new QToolButton(row);
+    btnDir->setText(QStringLiteral("..."));
+    btnDir->setToolTip(tr("选择输出目录"));
+    h->addWidget(leDir, 1);
+    h->addWidget(btnDir);
+
+    auto commit = [this, nodeId, comboOut, leDir]()
+    {
+        QVariantMap p;
+        for (const auto &n : m_engine->nodes())
+        {
+            if (n.instanceId == nodeId)
+            {
+                p = n.params;
+                break;
+            }
+        }
+        p.insert(QStringLiteral("output_type"), comboOut->currentText());
+        p.insert(QStringLiteral("output_dir"), leDir->text().trimmed());
+        m_engine->setNodeParams(nodeId, p);
+    };
+
+    connect(comboOut, qOverload<int>(&QComboBox::currentIndexChanged), this, commit);
+    connect(leDir, &QLineEdit::editingFinished, this, commit);
+    connect(btnDir, &QToolButton::clicked, this,
+            [this, leDir, commit]()
+            {
+                const QString picked = QFileDialog::getExistingDirectory(
+                    this, tr("选择输出目录"), leDir->text());
+                if (!picked.isEmpty())
+                {
+                    leDir->setText(picked);
+                    commit();
+                }
+            });
+
+    auto *btnExport = new QPushButton(tr("导出"), m_paramsPanel);
+    btnExport->setToolTip(tr("将节点已生成的 H5 文件另存到指定位置"));
+    connect(btnExport, &QPushButton::clicked, this, [this, nodeId]()
+            { onExportFormatConvert(nodeId); });
+
+    m_paramsForm->addRow(tr("输出格式"), comboOut);
+    m_paramsForm->addRow(tr("输出目录"), row);
+    m_paramsForm->addRow(QString(), btnExport);
+}
+
+void WorkflowEditorTab::onExportFormatConvert(const QString &nodeId)
+{
+    if (!m_engine)
+        return;
+
+    auto collectH5InDir = [](const QString &dirPath) -> QStringList
+    {
+        QStringList found;
+        const QDir dir(dirPath);
+        const QStringList names = dir.entryList(
+            {QStringLiteral("*.h5"), QStringLiteral("*.hdf5")},
+            QDir::Files);
+        for (const QString &name : names)
+            found.append(dir.absoluteFilePath(name));
+        return found;
+    };
+
+    QStringList h5Files = m_engine->outputsOf(nodeId);
+    QStringList filtered;
+    for (const QString &p : h5Files)
+    {
+        const QString low = p.toLower();
+        if (low.endsWith(QStringLiteral(".h5")) || low.endsWith(QStringLiteral(".hdf5")))
+            filtered.append(p);
+    }
+    h5Files = filtered;
+
+    if (h5Files.isEmpty())
+    {
+        for (const auto &n : m_engine->nodes())
+        {
+            if (n.instanceId != nodeId)
+                continue;
+            const QString outDir = n.params.value(QStringLiteral("output_dir")).toString().trimmed();
+            if (!outDir.isEmpty())
+                h5Files = collectH5InDir(outDir);
+            break;
+        }
+    }
+
+    if (h5Files.isEmpty())
+    {
+        showStatus(tr("没有可导出的 H5 文件，请先运行节点完成转换"), true);
+        return;
+    }
+
+    int copied = 0;
+    if (h5Files.size() == 1)
+    {
+        const QFileInfo srcFi(h5Files.constFirst());
+        const QString destPath = QFileDialog::getSaveFileName(
+            this,
+            tr("导出 H5 文件"),
+            srcFi.absoluteFilePath(),
+            tr("HDF5 文件 (*.h5 *.hdf5);;所有文件 (*)"));
+        if (destPath.isEmpty())
+            return;
+
+        if (QFile::exists(destPath))
+            QFile::remove(destPath);
+        if (QFile::copy(h5Files.constFirst(), destPath))
+        {
+            copied = 1;
+            showStatus(tr("已导出：%1").arg(destPath));
+        }
+        else
+        {
+            showStatus(tr("导出失败：无法写入 %1").arg(destPath), true);
+        }
+        return;
+    }
+
+    const QString destDir = QFileDialog::getExistingDirectory(
+        this, tr("导出到文件夹"), QString());
+    if (destDir.isEmpty())
+        return;
+
+    for (const QString &src : h5Files)
+    {
+        const QFileInfo fi(src);
+        if (!fi.exists())
+            continue;
+        const QString dest = QDir(destDir).filePath(fi.fileName());
+        if (QFile::exists(dest))
+            QFile::remove(dest);
+        if (QFile::copy(src, dest))
+            ++copied;
+    }
+
+    if (copied > 0)
+        showStatus(tr("已导出 %1/%2 个 H5 文件到 %3").arg(copied).arg(h5Files.size()).arg(destDir));
+    else
+        showStatus(tr("导出失败，请检查目标目录权限"), true);
 }
 
 void WorkflowEditorTab::showStatus(const QString &text, bool error, int timeoutMs)

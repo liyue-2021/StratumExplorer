@@ -23,6 +23,8 @@ namespace processing::production
             QMap<QString, QString> labels;
             QStringList order;
             bool fictional = false;
+            bool hidePropertyPanel = false;
+            QString configDialogId;
         };
 
         QVariant jsonToVariant(const QJsonValue &v, const QString &type)
@@ -126,6 +128,9 @@ namespace processing::production
                     }
 
                     spec.fictional = nodeObj.value(QStringLiteral("fictional")).toBool(false);
+                    spec.hidePropertyPanel =
+                        nodeObj.value(QStringLiteral("propertyPanel")).toString() == QLatin1String("none");
+                    spec.configDialogId = nodeObj.value(QStringLiteral("configDialog")).toString();
                     t.insert(it.key(), spec);
                 }
 
@@ -148,8 +153,10 @@ namespace processing::production
         meta.paramLabels = spec.labels;
         meta.paramOrder = spec.order;
         meta.clientParamsFictional = spec.fictional;
+        meta.hidePropertyPanel = spec.hidePropertyPanel;
+        meta.configDialogId = spec.configDialogId;
 
-        if (meta.externalProcess)
+        if (meta.externalProcess && !meta.hidePropertyPanel)
             meta.paramLabels.insert(QStringLiteral("exePath"), QObject::tr("程序路径"));
     }
 

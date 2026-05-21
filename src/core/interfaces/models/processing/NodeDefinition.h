@@ -46,6 +46,12 @@ namespace processing
 
         // true：属性参数来自行业通用模板，暂为虚构（见 node_client_params.json fictional）
         bool clientParamsFictional = false;
+
+        // 不在右侧属性面板展示参数（见 node_client_params.json propertyPanel: "none"）
+        bool hidePropertyPanel = false;
+
+        // 双击节点时弹出的配置对话框 ID（如 format_convert）
+        QString configDialogId;
     };
 
     // 端口匹配检查（连线时调用，PDF 3.1.3）

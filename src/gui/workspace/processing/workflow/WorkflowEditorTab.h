@@ -80,8 +80,11 @@ namespace processing
             void onPaletteDoubleClicked(const QString &typeId);
             // 画布上选中节点时，重建右侧属性面板表单
             void onSelectionChanged();
-            // 双击 display 节点时弹出数据可视化窗口（QCustomPlot）
+            // 双击节点（当前仅提示，配置/展示弹窗待甲方确认后恢复）
             void onNodeDoubleClicked(const QString &nodeId);
+            void rebuildDataInputParamForm(const QString &nodeId, const QVariantMap &displayParams);
+            void rebuildFormatConvertParamForm(const QString &nodeId, const QVariantMap &displayParams);
+            void onExportFormatConvert(const QString &nodeId);
 
             // 状态栏临时提示
             void showStatus(const QString &text, bool error = false, int timeoutMs = 5000);

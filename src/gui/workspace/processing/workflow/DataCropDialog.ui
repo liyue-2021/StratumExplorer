@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DataCropDialog</class>
+ <widget class="QDialog" name="DataCropDialog">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>620</width><height>520</height></rect></property>
+  <property name="minimumSize"><size><width>560</width><height>460</height></size></property>
+  <property name="windowTitle"><string>数据裁剪</string></property>
+  <property name="styleSheet"><string notr="true">QDialog { background: #ECEFF1; }
+QGridLayout QLabel { color: #37474F; min-width: 88px; qproperty-alignment: 'AlignLeft | AlignVCenter'; }
+QLineEdit, QComboBox, QDoubleSpinBox { background: white; min-height: 28px; padding: 2px 8px; }
+QPushButton { min-height: 28px; padding: 4px 12px; }
+QPushButton#btnPickInput, QPushButton#btnPickOutput { min-width: 140px; max-width: 140px; }
+QPushButton#btnPickOutput { background: #E3F2FD; color: #1565C0; }</string></property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing"><number>14</number></property>
+   <property name="leftMargin"><number>24</number></property>
+   <property name="topMargin"><number>20</number></property>
+   <property name="rightMargin"><number>24</number></property>
+   <property name="bottomMargin"><number>16</number></property>
+   <item>
+    <layout class="QHBoxLayout" name="inputPathLayout">
+     <property name="spacing"><number>10</number></property>
+     <item>
+      <widget class="QPushButton" name="btnPickInput">
+       <property name="sizePolicy"><sizepolicy hsizetype="Fixed" vsizetype="Fixed"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property>
+       <property name="text"><string>选择文件...</string></property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="editInputPath">
+       <property name="readOnly"><bool>true</bool></property>
+       <property name="placeholderText"><string>未选择</string></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QGridLayout" name="gridLayout">
+     <property name="horizontalSpacing"><number>10</number></property>
+     <property name="verticalSpacing"><number>12</number></property>
+     <item row="0" column="0"><widget class="QLabel" name="labelFilterSuffix"><property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property><property name="text"><string>过滤后缀</string></property></widget></item>
+     <item row="0" column="1"><widget class="QComboBox" name="comboFilterSuffix"><item><property name="text"><string>Off</string></property></item><item><property name="text"><string>On</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="0" column="2"><widget class="QLabel" name="labelSuffix"><property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property><property name="text"><string>后缀</string></property></widget></item>
+     <item row="0" column="3"><widget class="QComboBox" name="comboSuffix"><item><property name="text"><string>.osa</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="1" column="0"><widget class="QLabel" name="labelFormat"><property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property><property name="text"><string>格式</string></property></widget></item>
+     <item row="1" column="1"><widget class="QComboBox" name="comboFormat"><item><property name="text"><string>OSA by OptaSoft</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="1" column="2"><widget class="QLabel" name="labelDasFormat"><property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property><property name="text"><string>DAS数据格式</string></property></widget></item>
+     <item row="1" column="3"><widget class="QComboBox" name="comboDasFormat"><item><property name="text"><string>Raw</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="2" column="0"><widget class="QLabel" name="labelChannelClip"><property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property><property name="text"><string>通道裁剪</string></property></widget></item>
+     <item row="2" column="1"><widget class="QComboBox" name="comboChannelClip"><item><property name="text"><string>On</string></property></item><item><property name="text"><string>Off</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="2" column="2"><widget class="QLabel" name="labelChannelMode"><property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property><property name="text"><string>通道模式</string></property></widget></item>
+     <item row="2" column="3"><widget class="QComboBox" name="comboChannelMode"><item><property name="text"><string>Length</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="3" column="0"><widget class="QLabel" name="labelDepthMin"><property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property><property name="text"><string>深度最小值</string></property></widget></item>
+     <item row="3" column="1"><widget class="QDoubleSpinBox" name="spinDepthMin"><property name="decimals"><number>2</number></property><property name="maximum"><double>999999999.000000000000000</double></property></widget></item>
+     <item row="3" column="2"><widget class="QLabel" name="labelDepthMax"><property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property><property name="text"><string>深度最大值</string></property></widget></item>
+     <item row="3" column="3"><widget class="QDoubleSpinBox" name="spinDepthMax"><property name="decimals"><number>2</number></property><property name="maximum"><double>999999999.000000000000000</double></property><property name="value"><double>1000.000000000000000</double></property></widget></item>
+     <item row="4" column="0"><widget class="QLabel" name="labelSampleClip"><property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property><property name="text"><string>采样点裁剪</string></property></widget></item>
+     <item row="4" column="1"><widget class="QComboBox" name="comboSampleClip"><item><property name="text"><string>On</string></property></item><item><property name="text"><string>Off</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="4" column="2"><widget class="QLabel" name="labelSampleMode"><property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property><property name="text"><string>采样点模式</string></property></widget></item>
+     <item row="4" column="3"><widget class="QComboBox" name="comboSampleMode"><item><property name="text"><string>Time</string></property></item><item><property name="text"><string>选项二</string></property></item></widget></item>
+     <item row="5" column="0"><widget class="QLabel" name="labelTimeMin"><property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property><property name="text"><string>时间最小值</string></property></widget></item>
+     <item row="5" column="1"><widget class="QDoubleSpinBox" name="spinTimeMin"><property name="decimals"><number>2</number></property><property name="maximum"><double>999999999.000000000000000</double></property></widget></item>
+     <item row="5" column="2"><widget class="QLabel" name="labelTimeMax"><property name="alignment"><set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignVCenter</set></property><property name="text"><string>时间最大值</string></property></widget></item>
+     <item row="5" column="3"><widget class="QDoubleSpinBox" name="spinTimeMax"><property name="decimals"><number>2</number></property><property name="maximum"><double>999999999.000000000000000</double></property><property name="value"><double>1000.000000000000000</double></property></widget></item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="outputPathLayout">
+     <property name="spacing"><number>10</number></property>
+     <item>
+      <widget class="QPushButton" name="btnPickOutput">
+       <property name="sizePolicy"><sizepolicy hsizetype="Fixed" vsizetype="Fixed"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property>
+       <property name="text"><string>选择输出文件夹...</string></property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="editOutputPath">
+       <property name="readOnly"><bool>true</bool></property>
+       <property name="placeholderText"><string>未选择</string></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="actionLayout">
+     <property name="spacing"><number>12</number></property>
+     <item>
+      <widget class="QPushButton" name="btnCrop">
+       <property name="minimumSize"><size><width>120</width><height>36</height></size></property>
+       <property name="maximumSize"><size><width>120</width><height>36</height></size></property>
+       <property name="styleSheet"><string notr="true">QPushButton { background: white; color: #1565C0; font-weight: bold;
+ border: 1px solid #B0BEC5; border-radius: 4px; }
+QPushButton:hover:enabled { background: #E3F2FD; }
+QPushButton:disabled { color: #90A4AE; background: #ECEFF1; }</string></property>
+       <property name="text"><string>裁剪</string></property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="labelStatus">
+       <property name="styleSheet"><string notr="true">color: #546E7A; padding: 4px 0;</string></property>
+       <property name="text"><string>请填写参数后点击「裁剪」</string></property>
+       <property name="wordWrap"><bool>true</bool></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="footerLayout">
+     <item><spacer name="horizontalSpacer"><property name="orientation"><enum>Qt::Orientation::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
+     <item>
+      <widget class="QDialogButtonBox" name="buttonBox">
+       <property name="standardButtons"><set>QDialogButtonBox::StandardButton::Cancel</set></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

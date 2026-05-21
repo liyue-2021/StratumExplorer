@@ -31,7 +31,26 @@ namespace processing
             // 辅助函数：创建节点元数据
             // ============================================================================
 
-            // 预处理组 - 数据格式转换（⚠ 属性参数暂为虚构，见 node_client_params.json）
+            // 数据管理 - 数据输入（右侧属性面板选 LAS；无双击弹窗）
+            NodeMeta makeDataInputMeta()
+            {
+                NodeMeta m;
+                m.typeId = "input.data_input";
+                m.displayName = QObject::tr("数据输入");
+                m.category = QObject::tr("数据输入");
+                m.group = NodeGroup::DataInput;
+                m.kind = NodeKind::PureOutput;
+                m.funcId = -1;
+                m.funcName = QString();
+                m.inputs = {};
+                m.outputs = {{"out", QObject::tr("数据文件"), DataFormat::LAS}};
+                m.description = QObject::tr("选择 LAS 测井文件作为工作流输入，可多选。");
+                m.order = 0;
+                m.externalProcess = false;
+                return finalizeMeta(m);
+            }
+
+            // 预处理组 - 数据格式转换（参数见 node_client_params.json；旧弹窗 UI 保留待甲方确认）
             NodeMeta makeFormatConvertMeta()
             {
                 NodeMeta m;
@@ -46,11 +65,12 @@ namespace processing
                 m.outputs = {{"out", QObject::tr("输出"), DataFormat::HDF5}};
                 m.description = QObject::tr("数据格式转换，将各种输入格式转换为统一的 HDF5 格式。");
                 m.order = 1;
-                m.externalProcess = true;
+                // 格式转换走应用内后端服务，不启动外部 EXE
+                m.externalProcess = false;
                 return finalizeMeta(m);
             }
 
-            // 预处理组 - 深度矫正 (funcId=1)
+            // 预处理组 - 深度矫正 (funcId=1)；弹窗见 DepthCorrectDialog.ui
             NodeMeta makeDepthCorrectMeta()
             {
                 NodeMeta m;
@@ -69,7 +89,7 @@ namespace processing
                 return finalizeMeta(m);
             }
 
-            // 预处理组 - 时间矫正 (funcId=2)
+            // 预处理组 - 时间矫正 (funcId=2)；弹窗见 TimeCorrectDialog.ui
             NodeMeta makeDepthTimeCorrectMeta()
             {
                 NodeMeta m;
@@ -88,7 +108,7 @@ namespace processing
                 return finalizeMeta(m);
             }
 
-            // 预处理组 - 数据裁剪 (funcId=3)
+            // 预处理组 - 数据裁剪 (funcId=3)；弹窗见 DataCropDialog.ui
             NodeMeta makeDataCropMeta()
             {
                 NodeMeta m;
@@ -107,7 +127,7 @@ namespace processing
                 return finalizeMeta(m);
             }
 
-            // 预处理组 - 数据合并 (funcId=4)
+            // 预处理组 - 数据合并 (funcId=4)；弹窗见 DataMergeDialog.ui
             NodeMeta makeDataMergeMeta()
             {
                 NodeMeta m;
@@ -126,7 +146,7 @@ namespace processing
                 return finalizeMeta(m);
             }
 
-            // 预处理组 - DAS数据转换 (funcId=5)
+            // 预处理组 - DAS数据转换 (funcId=5)；弹窗见 DasConvertDialog.ui
             NodeMeta makeDasConvertMeta()
             {
                 NodeMeta m;
@@ -145,7 +165,7 @@ namespace processing
                 return finalizeMeta(m);
             }
 
-            // 预处理组 - LF-DAS提取 (funcId=6)
+            // 预处理组 - LF-DAS提取 (funcId=6)；弹窗见 LfdasExtractDialog.ui
             NodeMeta makeLfdasExtractMeta()
             {
                 NodeMeta m;
@@ -859,6 +879,9 @@ namespace processing
             // 避免重复注册
             if (reg.hasType("preprocess.depth_correct"))
                 return; // 已注册
+
+            // ---------- 数据管理 ----------
+            registerExternalNode(reg, makeDataInputMeta);
 
             // ---------- 预处理小组件 ----------
             registerExternalNode(reg, makeFormatConvertMeta);

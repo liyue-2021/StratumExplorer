@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSizePolicy>
 #include <QTextStream>
 #include <QVBoxLayout>
 #include <QtMath>
@@ -26,9 +27,11 @@ const QVector<QColor> kPalette = {
 PlotDialog::PlotDialog(const QString& title, QWidget* parent)
     : QDialog(parent) {
     setWindowTitle(title);
+    setMinimumSize(640, 400);
     resize(900, 560);
 
     m_plot = new QCustomPlot(this);
+    m_plot->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_plot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom |
                             QCP::iSelectAxes | QCP::iSelectLegend |
                             QCP::iSelectPlottables);
