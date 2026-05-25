@@ -61,7 +61,7 @@ namespace processing
                 m.kind = NodeKind::InOut;
                 m.funcId = 0;
                 m.funcName = "func_format_convert";
-                m.inputs = {{"in", QObject::tr("输入"), DataFormat::Unknown}};
+                m.inputs = {{"in", QObject::tr("输入"), DataFormat::LAS}};
                 m.outputs = {{"out", QObject::tr("输出"), DataFormat::HDF5}};
                 m.description = QObject::tr("数据格式转换，将各种输入格式转换为统一的 HDF5 格式。");
                 m.order = 1;
@@ -862,7 +862,8 @@ namespace processing
 
             void registerExternalNode(NodeRegistry &reg, NodeMeta (*maker)())
             {
-                const NodeMeta meta = finalizeMeta(maker());
+                // maker() 内部已 finalizeMeta，勿重复调用以免 paramOrder 重复
+                const NodeMeta meta = maker();
                 reg.registerType(meta, [meta]()
                                  { return std::make_shared<ExternalProcessNode>(meta); });
             }

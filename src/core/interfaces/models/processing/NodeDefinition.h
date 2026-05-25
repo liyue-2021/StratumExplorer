@@ -44,6 +44,16 @@ namespace processing
         // 属性面板参数展示顺序（空则按 key 字典序）
         QStringList paramOrder;
 
+        // 枚举类参数可选项（key -> linear/cubic/...），属性面板渲染为下拉框
+        QMap<QString, QStringList> paramOptions;
+
+        // 浮点参数下限（key -> 最小允许值）；配合 minExclusive 表示必须严格大于该值
+        QMap<QString, double> paramFloatMin;
+        QMap<QString, bool> paramFloatMinExclusive;
+
+        // 甲方标记的必选参数（属性面板标签加 *）
+        QMap<QString, bool> paramRequired;
+
         // true：属性参数来自行业通用模板，暂为虚构（见 node_client_params.json fictional）
         bool clientParamsFictional = false;
 

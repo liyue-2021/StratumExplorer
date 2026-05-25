@@ -10,6 +10,8 @@
 class QStackedWidget;
 class QTabWidget;
 class QTableWidget;
+class QPushButton;
+class QLabel;
 
 namespace Ui
 {
@@ -50,9 +52,13 @@ private:
     void showPresetPage();
     void showWorkflowEditor(const QString &presetName = {});
     void updatePresetTable();
-    void removePreset(int row);
-    void editPresetMetadata(int row);
-    void openPresetDetails(int row);
+    void adjustPresetColumnWidths();
+    void updatePaginationBar();
+    int totalPresetPages() const;
+    void goToPresetPage(int pageIndex);
+    void removePreset(int globalRow);
+    void editPresetMetadata(int globalRow);
+    void openPresetDetails(int globalRow);
     void onSaveWorkflowRequested();
     void loadPresetsFromFile();
     void savePresetsToFile();
@@ -74,6 +80,11 @@ private:
     QStackedWidget *m_mainStack = nullptr;
     QWidget *m_presetPage = nullptr;
     QTableWidget *m_presetTable = nullptr;
+    QPushButton *m_btnPresetPrevPage = nullptr;
+    QPushButton *m_btnPresetNextPage = nullptr;
+    QLabel *m_presetPageLabel = nullptr;
+    int m_presetPageIndex = 0;
+    static constexpr int kPresetsPerPage = 15;
     QTabWidget *m_innerTabs = nullptr;
     processing::gui::WorkflowEditorTab *m_editor = nullptr;
     QList<PresetItem> m_presets;

@@ -99,9 +99,9 @@
     ],
     "defaultParams": {
       "depth_min": 0.0,
-      "depth_max": 9999.0,
+      "depth_max": 1000.0,
       "time_min": 0.0,
-      "time_max": 999999.0
+      "time_max": 1000.0
     },
     "description": "根据指定的深度、时间范围，剪裁无效数据，保留有效区间。",
     "externalProcess": true

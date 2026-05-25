@@ -68,6 +68,9 @@ public:
     virtual QList<EdgeInstance> edges() const = 0;
     virtual NodeStatus           statusOf(const QString& instanceId) const = 0;
     virtual QStringList          outputsOf(const QString& instanceId) const = 0;
+    /// 解析连到该节点输入端的上游文件（优先用上游运行产出，否则读数据输入节点的 input_files）
+    virtual QStringList          upstreamInputFiles(const QString& toNodeId,
+                                                    const QString& toPort = {}) const = 0;
 
     // ---------- 运行控制 ----------
     virtual void runSingle(const QString& instanceId) = 0;   // PDF 3.2.1

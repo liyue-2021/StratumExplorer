@@ -113,6 +113,9 @@ namespace processing
             // 当前文件路径（“保存”不弹窗、直接覆盖）
             QString m_currentFilePath;
             bool m_currentIsTemplate = true;
+
+            // rebuildParamForm 内会 setNodeParams；防止 nodeParamsChanged 重入导致表单重复
+            bool m_rebuildingParamForm = false;
         };
 
     }

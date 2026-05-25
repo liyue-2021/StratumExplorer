@@ -166,8 +166,10 @@ stdout 事件：`progress` / `done` / `error`
 
 | 节点 typeId | 是否调 EXE | 前端现在做了什么 | 后端还要做什么 |
 |-------------|------------|------------------|----------------|
-| `input.data_input` | 否 | 属性面板多选 LAS，运行后把路径当作下游输入 | 一般无需 EXE；若需校验 LAS 格式可另议 |
-| `preprocess.format_convert` | **否**（`externalProcess=false`） | `ExternalProcessNode.cpp` 里 **TODO**：读 LAS 字节写入 `.h5` 占位文件；导出按钮用 `QFile::copy` 另存 | **真 LAS→H5 转换**（库或独立模块）。对接方式二选一见下表 |
+| `input.data_input` | 否 | 属性面板多选 LAS → `params.input_files`；运行后 `outputs` 为路径列表 | 一般无需 EXE；若需校验 LAS 格式可另议 |
+| `preprocess.format_convert` | **否**（`externalProcess=false`） | 连线后 `WorkflowEngine` 把上游 LAS 注入 `setInputFiles("in", …)`；`run()` 读 `m_inputs` 做占位 `.h5` | **真 LAS→H5 转换**（库或独立模块）。对接方式二选一见下表 |
+
+**数据输入 → 格式转换（前端已打通）**：画布上「数据文件」→「输入」连线；调度时 `WorkflowEngine::resolveUpstreamFiles` 优先用上游 `outputs`，若数据输入尚未运行则直接读其 `input_files`。属性面板「上游输入文件」只读展示。
 | `preprocess.depth_correct` 等 23 个 | **是** | 写 `input_config_<id>.json`，`exe.exe config.json`，读 `task_<id>.json` | 在 EXE 内实现对应 `func_id` / `func_name` |
 
 ### 8.1 格式转换：后端对接入口（二选一）

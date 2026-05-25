@@ -208,20 +208,58 @@ void ProcessingPage::createPresetPage()
 
     m_presetTable = new QTableWidget(0, 7, m_presetPage);
     m_presetTable->setHorizontalHeaderLabels({tr("序号"), tr("名称"), tr("创建时间"), tr("最近修改"), tr("创建人"), tr("备注"), tr("操作")});
-    m_presetTable->horizontalHeader()->setStretchLastSection(true);
-    m_presetTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
-    m_presetTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Stretch);
+    m_presetTable->setStyleSheet(
+        QStringLiteral("QTableWidget { background: white; gridline-color: #E0E0E0; border: 1px solid #CFD8DC; "
+                       "border-radius: 4px; }"
+                       "QTableWidget::item { padding: 4px 6px; }"
+                       "QHeaderView::section { background: #ECEFF1; color: #37474F; padding: 6px 8px; "
+                       "border: none; border-bottom: 1px solid #B0BEC5; font-weight: bold; }"));
+    m_presetTable->horizontalHeader()->setStretchLastSection(false);
+    m_presetTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
+    m_presetTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    m_presetTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    m_presetTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+    m_presetTable->horizontalHeader()->setSectionResizeMode(4, QHeaderView::ResizeToContents);
+    m_presetTable->horizontalHeader()->setSectionResizeMode(5, QHeaderView::Stretch);
+    m_presetTable->horizontalHeader()->setSectionResizeMode(6, QHeaderView::Fixed);
+    m_presetTable->setColumnWidth(0, 52);
+    m_presetTable->setColumnWidth(6, 200);
     m_presetTable->verticalHeader()->setVisible(false);
+    m_presetTable->verticalHeader()->setDefaultSectionSize(34);
     m_presetTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_presetTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_presetTable->setSelectionMode(QAbstractItemView::SingleSelection);
     m_presetTable->setAlternatingRowColors(true);
-    m_presetTable->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    m_presetTable->setMinimumHeight(220);
-    m_presetTable->setMaximumHeight(380);
+    m_presetTable->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_presetTable->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    m_presetTable->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    m_presetTable->setFixedHeight(m_presetTable->horizontalHeader()->height()
+                                  + m_presetTable->verticalHeader()->defaultSectionSize() * kPresetsPerPage
+                                  + 2);
     layout->addWidget(m_presetTable);
 
-    auto *hint = new QLabel(tr("单击“详情”进入工作流预设；“编辑”修改预设名称、创建人和备注。"), m_presetPage);
+    auto *pagerLayout = new QHBoxLayout();
+    pagerLayout->setSpacing(12);
+    m_btnPresetPrevPage = new QPushButton(tr("< 上一页"), m_presetPage);
+    m_btnPresetNextPage = new QPushButton(tr("下一页 >"), m_presetPage);
+    m_btnPresetPrevPage->setFixedWidth(96);
+    m_btnPresetNextPage->setFixedWidth(96);
+    m_presetPageLabel = new QLabel(m_presetPage);
+    m_presetPageLabel->setAlignment(Qt::AlignCenter);
+    m_presetPageLabel->setStyleSheet(QStringLiteral("color:#546E7A; font-size:13px;"));
+    pagerLayout->addStretch();
+    pagerLayout->addWidget(m_btnPresetPrevPage);
+    pagerLayout->addWidget(m_presetPageLabel);
+    pagerLayout->addWidget(m_btnPresetNextPage);
+    pagerLayout->addStretch();
+    layout->addLayout(pagerLayout);
+
+    connect(m_btnPresetPrevPage, &QPushButton::clicked, this, [this]()
+            { goToPresetPage(m_presetPageIndex - 1); });
+    connect(m_btnPresetNextPage, &QPushButton::clicked, this, [this]()
+            { goToPresetPage(m_presetPageIndex + 1); });
+
+    auto *hint = new QLabel(tr("单击“详情”进入工作流；“编辑”修改名称、创建人与备注。每页显示 15 条。"), m_presetPage);
     hint->setStyleSheet("color:#607D8B; font-size:12px;");
     layout->addWidget(hint);
     layout->addStretch();
@@ -246,6 +284,7 @@ void ProcessingPage::addPreset(const QString &name, const QString &creator, cons
     item.modifiedAt = now;
     item.workflowData = workflowData;
     m_presets.append(item);
+    m_presetPageIndex = totalPresetPages() - 1;
     updatePresetTable();
     savePresetsToFile();
     showWorkflowEditor(name);
@@ -341,59 +380,142 @@ void ProcessingPage::onSaveWorkflowRequested()
     saveCurrentWorkflow();
 }
 
+int ProcessingPage::totalPresetPages() const
+{
+    if (m_presets.isEmpty())
+        return 1;
+    return (m_presets.size() + kPresetsPerPage - 1) / kPresetsPerPage;
+}
+
+void ProcessingPage::goToPresetPage(int pageIndex)
+{
+    const int pages = totalPresetPages();
+    m_presetPageIndex = qBound(0, pageIndex, pages - 1);
+    updatePresetTable();
+}
+
+void ProcessingPage::updatePaginationBar()
+{
+    const int total = m_presets.size();
+    const int pages = totalPresetPages();
+    const int current = m_presetPageIndex + 1;
+
+    if (m_presetPageLabel)
+    {
+        m_presetPageLabel->setText(
+            total == 0
+                ? tr("暂无预设")
+                : tr("第 %1 / %2 页，共 %3 条").arg(current).arg(pages).arg(total));
+    }
+    if (m_btnPresetPrevPage)
+        m_btnPresetPrevPage->setEnabled(m_presetPageIndex > 0);
+    if (m_btnPresetNextPage)
+        m_btnPresetNextPage->setEnabled(m_presetPageIndex < pages - 1);
+}
+
 void ProcessingPage::updatePresetTable()
 {
-    m_presetTable->setRowCount(m_presets.size());
-    for (int row = 0; row < m_presets.size(); ++row)
+    if (!m_presetTable)
+        return;
+
+    const int total = m_presets.size();
+    const int pages = totalPresetPages();
+    if (m_presetPageIndex >= pages)
+        m_presetPageIndex = qMax(0, pages - 1);
+
+    const int start = m_presetPageIndex * kPresetsPerPage;
+    const int end = qMin(start + kPresetsPerPage, total);
+    const int rowsOnPage = end - start;
+
+    m_presetTable->setRowCount(rowsOnPage);
+    for (int i = 0; i < rowsOnPage; ++i)
     {
-        const auto &item = m_presets.at(row);
-        m_presetTable->setItem(row, 0, new QTableWidgetItem(QString::number(row + 1)));
-        m_presetTable->setItem(row, 1, new QTableWidgetItem(item.name));
-        m_presetTable->setItem(row, 2, new QTableWidgetItem(item.createdAt));
-        m_presetTable->setItem(row, 3, new QTableWidgetItem(item.modifiedAt));
-        m_presetTable->setItem(row, 4, new QTableWidgetItem(item.creator));
-        m_presetTable->setItem(row, 5, new QTableWidgetItem(item.remark));
+        const int globalRow = start + i;
+        const auto &item = m_presets.at(globalRow);
+        m_presetTable->setItem(i, 0, new QTableWidgetItem(QString::number(globalRow + 1)));
+        m_presetTable->setItem(i, 1, new QTableWidgetItem(item.name));
+        m_presetTable->setItem(i, 2, new QTableWidgetItem(item.createdAt));
+        m_presetTable->setItem(i, 3, new QTableWidgetItem(item.modifiedAt));
+        m_presetTable->setItem(i, 4, new QTableWidgetItem(item.creator));
+        auto *remarkItem = new QTableWidgetItem(item.remark);
+        remarkItem->setToolTip(item.remark);
+        m_presetTable->setItem(i, 5, remarkItem);
 
         auto *ops = new QWidget(m_presetTable);
         auto *opsLayout = new QHBoxLayout(ops);
-        opsLayout->setContentsMargins(0, 0, 0, 0);
+        opsLayout->setContentsMargins(4, 2, 4, 2);
         opsLayout->setSpacing(6);
         auto *editBtn = new QPushButton(tr("编辑"), ops);
         auto *detailBtn = new QPushButton(tr("详情"), ops);
         auto *deleteBtn = new QPushButton(tr("删除"), ops);
-        editBtn->setFixedHeight(24);
-        detailBtn->setFixedHeight(24);
-        deleteBtn->setFixedHeight(24);
+        editBtn->setFixedHeight(26);
+        detailBtn->setFixedHeight(26);
+        deleteBtn->setFixedHeight(26);
+        detailBtn->setStyleSheet(QStringLiteral("QPushButton { color: #1565C0; font-weight: bold; }"));
         opsLayout->addWidget(editBtn);
         opsLayout->addWidget(detailBtn);
         opsLayout->addWidget(deleteBtn);
         opsLayout->addStretch();
-        m_presetTable->setCellWidget(row, 6, ops);
+        m_presetTable->setCellWidget(i, 6, ops);
 
-        connect(editBtn, &QPushButton::clicked, this, [this, row]()
-                { editPresetMetadata(row); });
-        connect(detailBtn, &QPushButton::clicked, this, [this, row]()
-                { openPresetDetails(row); });
-        connect(deleteBtn, &QPushButton::clicked, this, [this, row]()
-                { removePreset(row); });
+        connect(editBtn, &QPushButton::clicked, this, [this, globalRow]()
+                { editPresetMetadata(globalRow); });
+        connect(detailBtn, &QPushButton::clicked, this, [this, globalRow]()
+                { openPresetDetails(globalRow); });
+        connect(deleteBtn, &QPushButton::clicked, this, [this, globalRow]()
+                { removePreset(globalRow); });
     }
+
+    adjustPresetColumnWidths();
+    updatePaginationBar();
 }
 
-void ProcessingPage::removePreset(int row)
+void ProcessingPage::adjustPresetColumnWidths()
 {
-    if (row < 0 || row >= m_presets.size())
+    if (!m_presetTable || m_presetTable->rowCount() == 0)
         return;
-    m_presets.removeAt(row);
+
+    constexpr int kNameMaxWidth = 200;
+    m_presetTable->resizeColumnToContents(1);
+    if (m_presetTable->columnWidth(1) > kNameMaxWidth)
+        m_presetTable->setColumnWidth(1, kNameMaxWidth);
+
+    m_presetTable->resizeColumnToContents(4);
+    constexpr int kCreatorMaxWidth = 120;
+    if (m_presetTable->columnWidth(4) > kCreatorMaxWidth)
+        m_presetTable->setColumnWidth(4, kCreatorMaxWidth);
+}
+
+void ProcessingPage::removePreset(int globalRow)
+{
+    if (globalRow < 0 || globalRow >= m_presets.size())
+        return;
+
+    const auto reply = QMessageBox::question(
+        this,
+        tr("删除预设"),
+        tr("确定删除预设「%1」吗？").arg(m_presets.at(globalRow).name),
+        QMessageBox::Yes | QMessageBox::No,
+        QMessageBox::No);
+    if (reply != QMessageBox::Yes)
+        return;
+
+    m_presets.removeAt(globalRow);
+
+    const int pages = totalPresetPages();
+    if (m_presetPageIndex >= pages)
+        m_presetPageIndex = qMax(0, pages - 1);
+
     updatePresetTable();
     savePresetsToFile();
 }
 
-void ProcessingPage::editPresetMetadata(int row)
+void ProcessingPage::editPresetMetadata(int globalRow)
 {
-    if (row < 0 || row >= m_presets.size())
+    if (globalRow < 0 || globalRow >= m_presets.size())
         return;
 
-    auto item = m_presets.at(row);
+    auto item = m_presets.at(globalRow);
     PresetDialog dlg(this, tr("编辑预设信息"), item.name, item.creator, item.remark);
     if (dlg.exec() != QDialog::Accepted)
         return;
@@ -402,17 +524,17 @@ void ProcessingPage::editPresetMetadata(int row)
     item.creator = dlg.creator();
     item.remark = dlg.remark();
     item.modifiedAt = QDateTime::currentDateTime().toString("yyyy/M/d HH:mm");
-    m_presets[row] = item;
+    m_presets[globalRow] = item;
     updatePresetTable();
     savePresetsToFile();
 }
 
-void ProcessingPage::openPresetDetails(int row)
+void ProcessingPage::openPresetDetails(int globalRow)
 {
-    if (row < 0 || row >= m_presets.size() || !m_editor)
+    if (globalRow < 0 || globalRow >= m_presets.size() || !m_editor)
         return;
 
-    const auto item = m_presets.at(row);
+    const auto item = m_presets.at(globalRow);
     if (item.workflowData.isEmpty())
     {
         QMessageBox::warning(this, tr("打开失败"), tr("所选预设没有可加载的工作流数据。"));
@@ -539,6 +661,7 @@ void ProcessingPage::loadPresetsFromFile()
         item.workflowData = QByteArray::fromBase64(obj["workflowData"].toString().toUtf8());
         m_presets.append(item);
     }
+    m_presetPageIndex = 0;
     updatePresetTable();
 }
 

@@ -22,6 +22,10 @@ namespace processing::production
             QVariantMap defaults;
             QMap<QString, QString> labels;
             QStringList order;
+            QMap<QString, QStringList> options;
+            QMap<QString, double> floatMin;
+            QMap<QString, bool> floatMinExclusive;
+            QMap<QString, bool> required;
             bool fictional = false;
             bool hidePropertyPanel = false;
             QString configDialogId;
@@ -125,6 +129,26 @@ namespace processing::production
                         const QJsonValue defVal = p.value(QStringLiteral("default"));
                         spec.defaults.insert(key, jsonToVariant(defVal, type));
                         spec.labels.insert(key, p.value(QStringLiteral("label")).toString());
+
+                        if (p.contains(QStringLiteral("options")) && p.value(QStringLiteral("options")).isArray())
+                        {
+                            QStringList opts;
+                            for (const QJsonValue &ov : p.value(QStringLiteral("options")).toArray())
+                                opts.append(ov.toString());
+                            spec.options.insert(key, opts);
+                        }
+                        if (p.contains(QStringLiteral("minExclusive")))
+                        {
+                            spec.floatMin.insert(key, p.value(QStringLiteral("minExclusive")).toDouble());
+                            spec.floatMinExclusive.insert(key, true);
+                        }
+                        else if (p.contains(QStringLiteral("min")))
+                        {
+                            spec.floatMin.insert(key, p.value(QStringLiteral("min")).toDouble());
+                            spec.floatMinExclusive.insert(key, false);
+                        }
+                        if (p.value(QStringLiteral("required")).toBool(false))
+                            spec.required.insert(key, true);
                     }
 
                     spec.fictional = nodeObj.value(QStringLiteral("fictional")).toBool(false);
@@ -152,12 +176,32 @@ namespace processing::production
         meta.defaultParams = spec.defaults;
         meta.paramLabels = spec.labels;
         meta.paramOrder = spec.order;
+        meta.paramOptions = spec.options;
+        meta.paramFloatMin = spec.floatMin;
+        meta.paramFloatMinExclusive = spec.floatMinExclusive;
+        meta.paramRequired = spec.required;
         meta.clientParamsFictional = spec.fictional;
         meta.hidePropertyPanel = spec.hidePropertyPanel;
         meta.configDialogId = spec.configDialogId;
 
+        // 程序路径：仅在此处注入一次（勿在 JSON 与 ExternalProcessNode 重复定义）
         if (meta.externalProcess && !meta.hidePropertyPanel)
+        {
+            if (!meta.defaultParams.contains(QStringLiteral("exePath")))
+                meta.defaultParams.insert(QStringLiteral("exePath"), QString());
             meta.paramLabels.insert(QStringLiteral("exePath"), QObject::tr("程序路径"));
+            meta.paramOrder.removeAll(QStringLiteral("exePath"));
+            meta.paramOrder.prepend(QStringLiteral("exePath"));
+        }
+
+        QStringList dedupedOrder;
+        dedupedOrder.reserve(meta.paramOrder.size());
+        for (const QString &k : meta.paramOrder)
+        {
+            if (!dedupedOrder.contains(k))
+                dedupedOrder.append(k);
+        }
+        meta.paramOrder = dedupedOrder;
     }
 
     NodeMeta finalizeMeta(NodeMeta meta)

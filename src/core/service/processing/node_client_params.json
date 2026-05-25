@@ -1,553 +1,220 @@
 {
   "_fileMeta": {
-    "note": "以甲方属性参数表为准；节点参数在右侧属性面板编辑"
+    "note": "已清空旧版占位字段。外部 EXE 节点的 exePath（程序路径）由 ProductionNodeParams 代码注入，勿写进 JSON。"
   },
   "input.data_input": {
-    "order": ["input_files", "file_format"],
-    "params": {
-      "input_files": { "type": "array", "label": "输入文件", "default": [] },
-      "file_format": { "type": "string", "label": "文件格式", "default": "LAS" }
-    },
-    "note": "工作流入口；当前仅支持多选 LAS，file_format 预留扩展"
+    "note": "非外部 EXE 节点，无程序路径；业务参数待甲方补充",
+    "order": [],
+    "params": {}
   },
   "preprocess.format_convert": {
-    "note": "输入来自上游节点连线；属性面板仅配置输出",
-    "order": ["output_type", "output_dir"],
-    "params": {
-      "output_type": { "type": "string", "label": "输出格式", "default": "H5" },
-      "output_dir": { "type": "string", "label": "输出目录", "default": "" }
-    }
+    "note": "非外部 EXE 节点，无程序路径；业务参数待甲方补充",
+    "order": [],
+    "params": {}
   },
   "preprocess.depth_correct": {
-    "note": "Excel 字段 interp_method/depth_step/bound 待与后端对齐",
-    "order": [
-      "input_path", "format", "das_data_type", "depth_offset_m", "depth_scale",
-      "write_back", "output_format", "output_naming", "output_path"
-    ],
-    "params": {
-      "input_path": { "type": "string", "label": "输入文件", "default": "" },
-      "format": { "type": "string", "label": "格式", "default": "OSA by OptaSoft" },
-      "das_data_type": { "type": "string", "label": "DAS数据类型", "default": "Raw" },
-      "depth_offset_m": { "type": "float", "label": "深度偏移[m]", "default": 0.0 },
-      "depth_scale": { "type": "float", "label": "深度缩放系数", "default": 0.98269 },
-      "write_back": { "type": "string", "label": "原文件写入校正后深度", "default": "Off" },
-      "output_format": { "type": "string", "label": "输出格式", "default": ".osa" },
-      "output_naming": { "type": "string", "label": "输出文件名命名", "default": "DateTime" },
-      "output_path": { "type": "string", "label": "输出文件夹", "default": "" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.depth_time_correct": {
-    "note": "Excel 字段 time_offset/time_scale 等待与后端对齐",
-    "order": [
-      "input_path", "format", "das_data_type", "time_offset_s", "time_scale",
-      "write_back", "output_format", "output_naming", "output_path"
-    ],
-    "params": {
-      "input_path": { "type": "string", "label": "输入文件", "default": "" },
-      "format": { "type": "string", "label": "格式", "default": "OSA by OptaSoft" },
-      "das_data_type": { "type": "string", "label": "DAS数据类型", "default": "Raw" },
-      "time_offset_s": { "type": "float", "label": "时间偏移[s]", "default": 28800.0 },
-      "time_scale": { "type": "float", "label": "时间缩放系数", "default": 1.0 },
-      "write_back": { "type": "string", "label": "原文件写入校正后深度", "default": "Off" },
-      "output_format": { "type": "string", "label": "输出格式", "default": ".osa" },
-      "output_naming": { "type": "string", "label": "输出文件命名", "default": "DateTime" },
-      "output_path": { "type": "string", "label": "输出文件夹", "default": "" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.data_crop": {
-    "note": "Excel 字段 depth_min/time_max 等待与后端对齐",
-    "order": [
-      "input_path", "filter_suffix", "suffix", "format", "das_data_format",
-      "channel_clip", "channel_mode", "depth_min", "depth_max",
-      "sample_clip", "sample_mode", "time_min", "time_max", "output_path"
-    ],
-    "params": {
-      "input_path": { "type": "string", "label": "输入文件", "default": "" },
-      "filter_suffix": { "type": "string", "label": "过滤后缀", "default": "Off" },
-      "suffix": { "type": "string", "label": "后缀", "default": ".osa" },
-      "format": { "type": "string", "label": "格式", "default": "OSA by OptaSoft" },
-      "das_data_format": { "type": "string", "label": "DAS数据格式", "default": "Raw" },
-      "channel_clip": { "type": "string", "label": "通道裁剪", "default": "On" },
-      "channel_mode": { "type": "string", "label": "通道模式", "default": "Length" },
-      "depth_min": { "type": "float", "label": "深度最小值", "default": 0.0 },
-      "depth_max": { "type": "float", "label": "深度最大值", "default": 1000.0 },
-      "sample_clip": { "type": "string", "label": "采样点裁剪", "default": "On" },
-      "sample_mode": { "type": "string", "label": "采样点模式", "default": "Time" },
-      "time_min": { "type": "float", "label": "时间最小值", "default": 0.0 },
-      "time_max": { "type": "float", "label": "时间最大值", "default": 1000.0 },
-      "output_path": { "type": "string", "label": "输出文件夹", "default": "" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.data_merge": {
-    "note": "Excel 字段 concat_axis/channel_range 等待与后端对齐",
-    "order": [
-      "mode", "input_folder", "input_file", "filter_suffix", "suffix",
-      "processing_priority", "first_dimension", "fill_missing",
-      "channel_count", "sample_count", "channel_start", "channel_end",
-      "output_filename", "output_path"
-    ],
-    "params": {
-      "mode": { "type": "string", "label": "模式", "default": "Directory" },
-      "input_folder": { "type": "string", "label": "输入文件夹", "default": "" },
-      "input_file": { "type": "string", "label": "输入文件", "default": "" },
-      "filter_suffix": { "type": "string", "label": "过滤后缀", "default": "Off" },
-      "suffix": { "type": "string", "label": "后缀", "default": ".osa" },
-      "processing_priority": { "type": "string", "label": "处理优先项", "default": "Precision" },
-      "first_dimension": { "type": "string", "label": "第一维度", "default": "Time" },
-      "fill_missing": { "type": "string", "label": "补足缺失数据", "default": "On" },
-      "channel_count": { "type": "int", "label": "通道数目", "default": 100 },
-      "sample_count": { "type": "int", "label": "采样点数目", "default": 60000 },
-      "channel_start": { "type": "int", "label": "通道起始值", "default": 0 },
-      "channel_end": { "type": "int", "label": "通道终止值", "default": 100 },
-      "output_filename": { "type": "string", "label": "输出文件名称", "default": "merged_" },
-      "output_path": { "type": "string", "label": "输出文件夹", "default": "" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.das_convert": {
-    "note": "Excel 字段 fs/clip_value 等待与后端对齐",
-    "order": [
-      "input_path", "format", "das_data_type", "transform_mode", "value_unit",
-      "normalization", "normalization_type", "norm_min", "norm_max",
-      "processing_dimension", "win_len_us", "overlap_len_us", "output_path"
-    ],
-    "params": {
-      "input_path": { "type": "string", "label": "输入文件", "default": "" },
-      "format": { "type": "string", "label": "格式", "default": "OSA by OptaSoft" },
-      "das_data_type": { "type": "string", "label": "DAS数据类型", "default": "Raw" },
-      "transform_mode": { "type": "string", "label": "变换模式", "default": "RMS" },
-      "value_unit": { "type": "string", "label": "数值单位", "default": "Magnitude" },
-      "normalization": { "type": "string", "label": "归一化", "default": "On" },
-      "normalization_type": { "type": "string", "label": "归一化类型", "default": "Trace" },
-      "norm_min": { "type": "float", "label": "最小值", "default": 0.0 },
-      "norm_max": { "type": "float", "label": "最大值", "default": 1.0 },
-      "processing_dimension": { "type": "string", "label": "处理维度", "default": "Time Only" },
-      "win_len_us": { "type": "int", "label": "时窗长度[us]", "default": 1000000 },
-      "overlap_len_us": { "type": "int", "label": "重叠长度[us]", "default": 0 },
-      "output_path": { "type": "string", "label": "输出文件夹", "default": "" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.lfdas_extract": {
-    "note": "Excel 字段 fs/window_type 等待与后端对齐",
-    "order": [
-      "input_path", "filter_suffix", "suffix", "format", "data_type",
-      "filter_mode", "f_low", "f_high", "corner", "zero_phase_mode",
-      "time_filter", "time_filter_type", "data_axis", "down_factor", "fir_type", "fir_order",
-      "zero_phase_time", "time_win_len_us", "time_overlap_us",
-      "depth_filter", "depth_filter_type", "channel_win_len",
-      "io_parallel", "naming", "output_path"
-    ],
-    "params": {
-      "input_path": { "type": "string", "label": "输入文件", "default": "" },
-      "filter_suffix": { "type": "string", "label": "过滤后缀", "default": "Off" },
-      "suffix": { "type": "string", "label": "后缀", "default": ".osa" },
-      "format": { "type": "string", "label": "格式", "default": "OSA by OptaSoft" },
-      "data_type": { "type": "string", "label": "数据类型", "default": "Raw" },
-      "filter_mode": { "type": "string", "label": "滤波模式", "default": "Lowpass" },
-      "f_low": { "type": "float", "label": "低频截止[Hz]", "default": 0.0 },
-      "f_high": { "type": "float", "label": "高频截止[Hz]", "default": 1.0 },
-      "corner": { "type": "int", "label": "拐角数", "default": 4 },
-      "zero_phase_mode": { "type": "string", "label": "零相位", "default": "True" },
-      "time_filter": { "type": "string", "label": "时间方向滤波", "default": "On" },
-      "time_filter_type": { "type": "string", "label": "滤波器", "default": "Averaging" },
-      "data_axis": { "type": "int", "label": "数据轴", "default": 0 },
-      "down_factor": { "type": "int", "label": "降采样因子", "default": 10 },
-      "fir_type": { "type": "string", "label": "滤波器类型", "default": "fir" },
-      "fir_order": { "type": "int", "label": "阶数", "default": 200 },
-      "zero_phase_time": { "type": "string", "label": "零相位", "default": "True" },
-      "time_win_len_us": { "type": "int", "label": "时窗长度[us]", "default": 1000000 },
-      "time_overlap_us": { "type": "int", "label": "重叠长度[us]", "default": 0 },
-      "depth_filter": { "type": "string", "label": "深度方向滤波", "default": "On" },
-      "depth_filter_type": { "type": "string", "label": "滤波器", "default": "Median" },
-      "channel_win_len": { "type": "int", "label": "通道时窗长度", "default": 5 },
-      "io_parallel": { "type": "string", "label": "I/O并行", "default": "Off" },
-      "naming": { "type": "string", "label": "命名", "default": "DateTime" },
-      "output_path": { "type": "string", "label": "输出文件夹", "default": "" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.fk_analysis": {
-    "order": ["fs", "dx", "depth_range", "time_range", "win_type", "fk_mode"],
-    "params": {
-      "fs": { "type": "float", "label": "采样率", "default": 1000.0 },
-      "dx": { "type": "float", "label": "深度间距", "default": 0.5 },
-      "depth_range": { "type": "array", "label": "深度范围", "default": [] },
-      "time_range": { "type": "array", "label": "时间范围", "default": [] },
-      "win_type": { "type": "string", "label": "窗类型", "default": "hann" },
-      "fk_mode": { "type": "string", "label": "分析模式", "default": "2d" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.fft_extract": {
-    "order": ["fs", "win_len", "overlap", "freq_range", "window_type", "detrend"],
-    "params": {
-      "fs": { "type": "float", "label": "采样率", "default": 1000.0 },
-      "win_len": { "type": "int", "label": "窗长度", "default": 256 },
-      "overlap": { "type": "float", "label": "重叠率", "default": 0.5 },
-      "freq_range": { "type": "array", "label": "频率范围", "default": [] },
-      "window_type": { "type": "string", "label": "窗函数类型", "default": "hann" },
-      "detrend": { "type": "bool", "label": "去趋势", "default": false }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.bandpass_filter": {
-    "order": ["f_low", "f_high", "fs", "order", "zero_phase", "parallel_io", "window_type"],
-    "params": {
-      "f_low": { "type": "float", "label": "低频截止", "default": 1.0 },
-      "f_high": { "type": "float", "label": "高频截止", "default": 100.0 },
-      "fs": { "type": "float", "label": "采样率", "default": 1000.0 },
-      "order": { "type": "int", "label": "滤波器阶数", "default": 4 },
-      "zero_phase": { "type": "bool", "label": "零相位滤波", "default": true },
-      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true },
-      "window_type": { "type": "string", "label": "窗函数", "default": "hann" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.downsample": {
-    "order": ["factor", "fs", "axis", "anti_alias", "new_fs"],
-    "params": {
-      "factor": { "type": "int", "label": "降采样系数", "default": 2 },
-      "fs": { "type": "float", "label": "采样率", "default": 1000.0 },
-      "axis": { "type": "string", "label": "降采样轴", "default": "time" },
-      "anti_alias": { "type": "bool", "label": "抗混叠滤波", "default": true },
-      "new_fs": { "type": "float", "label": "目标采样率", "default": 500.0 }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.fts_extract": {
-    "order": ["fs", "win_len", "overlap", "freq_range", "window_type", "output_mode"],
-    "params": {
-      "fs": { "type": "float", "label": "采样率", "default": 1000.0 },
-      "win_len": { "type": "int", "label": "窗长度", "default": 256 },
-      "overlap": { "type": "float", "label": "重叠率", "default": 0.5 },
-      "freq_range": { "type": "array", "label": "频率范围", "default": [] },
-      "window_type": { "type": "string", "label": "窗函数", "default": "hann" },
-      "output_mode": { "type": "string", "label": "输出模式", "default": "magnitude" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.mainfreq_split": {
-    "order": ["depth_range", "time_range", "fs", "manual_bands", "parallel_io"],
-    "params": {
-      "depth_range": { "type": "array", "label": "深度范围", "default": [] },
-      "time_range": { "type": "array", "label": "时间范围", "default": [] },
-      "fs": { "type": "float", "label": "采样率", "default": 1000.0 },
-      "manual_bands": { "type": "array", "label": "人工频段划分", "default": [] },
-      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.fbe_extract": {
-    "order": ["freq_bands", "win_len", "energy_mode", "fs", "smooth_win", "parallel_io"],
-    "params": {
-      "freq_bands": { "type": "string", "label": "分频频段", "default": "1-100" },
-      "win_len": { "type": "int", "label": "窗口长度", "default": 256 },
-      "energy_mode": { "type": "string", "label": "能量模式", "default": "rms" },
-      "fs": { "type": "float", "label": "采样率", "default": 1000.0 },
-      "smooth_win": { "type": "int", "label": "平滑窗口", "default": 5 },
-      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.moving_avg": {
-    "order": ["mode", "win_len", "axis", "zero_phase", "parallel_io", "padding"],
-    "params": {
-      "mode": { "type": "string", "label": "滤波模式", "default": "mean" },
-      "win_len": { "type": "int", "label": "窗口长度", "default": 256 },
-      "axis": { "type": "string", "label": "滤波轴", "default": "time" },
-      "zero_phase": { "type": "bool", "label": "零相位", "default": false },
-      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true },
-      "padding": { "type": "string", "label": "边界填充方式", "default": "reflect" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.slow_strain": {
-    "order": ["method", "cut_freq", "fs", "poly_order", "parallel_io"],
-    "params": {
-      "method": { "type": "string", "label": "提取方法", "default": "lowpass" },
-      "cut_freq": { "type": "float", "label": "截止频率", "default": 1.0 },
-      "fs": { "type": "float", "label": "采样率", "default": 1000.0 },
-      "poly_order": { "type": "int", "label": "多项式阶数", "default": 3 },
-      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.dts_denoise": {
-    "order": ["denoise_method", "win_len", "wavelet", "parallel_io"],
-    "params": {
-      "denoise_method": { "type": "string", "label": "去噪方法", "default": "wavelet" },
-      "win_len": { "type": "int", "label": "窗口长度", "default": 256 },
-      "wavelet": { "type": "string", "label": "小波基函数", "default": "db4" },
-      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.temp_correct": {
-    "order": ["correct_method", "poly_order", "parallel_io"],
-    "params": {
-      "correct_method": { "type": "string", "label": "矫正方法", "default": "polynomial" },
-      "poly_order": { "type": "int", "label": "多项式阶数", "default": 2 },
-      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.temp_diff": {
-    "order": ["axis", "base_time", "order", "parallel_io"],
-    "params": {
-      "axis": { "type": "string", "label": "差分轴", "default": "time" },
-      "base_time": { "type": "float", "label": "本底时间", "default": 0.0 },
-      "order": { "type": "int", "label": "差分阶数", "default": 1 },
-      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.dtgs_gradient": {
-    "order": ["depth_step", "algorithm", "boundary_order", "parallel_io"],
-    "params": {
-      "depth_step": { "type": "float", "label": "深度步长", "default": 0.5 },
-      "algorithm": { "type": "string", "label": "梯度算法", "default": "central" },
-      "boundary_order": { "type": "int", "label": "边界阶数", "default": 1 },
-      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.baseline_build": {
-    "order": ["method", "ref_time_range", "depth_range", "poly_order", "parallel_io"],
-    "params": {
-      "method": { "type": "string", "label": "基线方法", "default": "mean" },
-      "ref_time_range": { "type": "array", "label": "参考时间范围", "default": [] },
-      "depth_range": { "type": "array", "label": "深度范围", "default": [] },
-      "poly_order": { "type": "int", "label": "多项式阶数", "default": 2 },
-      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.strain_disturb": {
-    "order": ["method", "base_mode", "hp_freq", "fs", "enhance", "parallel_io"],
-    "params": {
-      "method": { "type": "string", "label": "扰动方法", "default": "subtract" },
-      "base_mode": { "type": "string", "label": "基线模式", "default": "auto" },
-      "hp_freq": { "type": "float", "label": "高通频率", "default": 0.1 },
-      "fs": { "type": "float", "label": "采样率", "default": 1000.0 },
-      "enhance": { "type": "float", "label": "增强系数", "default": 1.0 },
-      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.temp_coupling": {
-    "order": ["couple_model", "coeff", "poly_order", "parallel_io"],
-    "params": {
-      "couple_model": { "type": "string", "label": "耦合模型", "default": "linear" },
-      "coeff": { "type": "float", "label": "耦合系数", "default": 1.0 },
-      "poly_order": { "type": "int", "label": "多项式阶数", "default": 2 },
-      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.baseline_calib": {
-    "order": ["base_method", "ref_segment", "calib_mode", "parallel_io"],
-    "params": {
-      "base_method": { "type": "string", "label": "基线方法", "default": "mean" },
-      "ref_segment": { "type": "array", "label": "参考段范围", "default": [] },
-      "calib_mode": { "type": "string", "label": "校准模式", "default": "offset" },
-      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "preprocess.phys_convert": {
-    "fictional": true,
-    "fictionalNote": "行业通用模板，参数暂为虚构，待甲方确认",
-    "order": ["transform_type", "unit", "param_mapping"],
-    "params": {
-      "transform_type": { "type": "string", "label": "转换类型", "default": "strain_to_temp" },
-      "unit": { "type": "string", "label": "单位", "default": "celsius" },
-      "param_mapping": { "type": "string", "label": "参数映射关系", "default": "" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "interpret.profile_interp": {
-    "fictional": true,
-    "fictionalNote": "行业通用模板，参数暂为虚构，待甲方确认",
-    "order": ["channel_range", "sample_range", "color_range", "interp_type", "fluid_params", "string_params", "symbol_file"],
-    "params": {
-      "channel_range": { "type": "array", "label": "通道范围", "default": [] },
-      "sample_range": { "type": "array", "label": "采样范围", "default": [] },
-      "color_range": { "type": "array", "label": "色标范围", "default": [] },
-      "interp_type": { "type": "string", "label": "插值类型", "default": "linear" },
-      "fluid_params": { "type": "array", "label": "流体参数", "default": [] },
-      "string_params": { "type": "array", "label": "管柱参数", "default": [] },
-      "symbol_file": { "type": "string", "label": "符号/层位文件路径", "default": "" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "interpret.inject_interp": {
-    "fictional": true,
-    "fictionalNote": "行业通用模板，参数暂为虚构，待甲方确认",
-    "order": ["channel_range", "sample_range", "color_range", "interp_type", "data_type", "channel_smooth", "fluid_unit", "symbol_file"],
-    "params": {
-      "channel_range": { "type": "array", "label": "通道范围", "default": [] },
-      "sample_range": { "type": "array", "label": "采样范围", "default": [] },
-      "color_range": { "type": "array", "label": "色标范围", "default": [] },
-      "interp_type": { "type": "string", "label": "插值类型", "default": "linear" },
-      "data_type": { "type": "string", "label": "数据类型", "default": "injection" },
-      "channel_smooth": { "type": "int", "label": "通道平滑", "default": 3 },
-      "fluid_unit": { "type": "string", "label": "流体单位", "default": "m3/d" },
-      "symbol_file": { "type": "string", "label": "符号/层位文件路径", "default": "" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "interpret.multiphase_diag": {
-    "fictional": true,
-    "fictionalNote": "行业通用模板，参数暂为虚构，待甲方确认",
-    "order": ["channel_range", "sample_range", "color_range", "interp_type", "fluid_params", "string_params", "symbol_file"],
-    "params": {
-      "channel_range": { "type": "array", "label": "通道范围", "default": [] },
-      "sample_range": { "type": "array", "label": "采样范围", "default": [] },
-      "color_range": { "type": "array", "label": "色标范围", "default": [] },
-      "interp_type": { "type": "string", "label": "插值类型", "default": "linear" },
-      "fluid_params": { "type": "array", "label": "流体参数", "default": [] },
-      "string_params": { "type": "array", "label": "管柱参数", "default": [] },
-      "symbol_file": { "type": "string", "label": "符号/层位文件路径", "default": "" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "interpret.frac_interp": {
-    "fictional": true,
-    "fictionalNote": "行业通用模板，参数暂为虚构，待甲方确认",
-    "order": ["color_range", "interp_type", "data_type", "channel_avg", "total_fluid", "unit", "marker_file"],
-    "params": {
-      "color_range": { "type": "array", "label": "色标范围", "default": [] },
-      "interp_type": { "type": "string", "label": "插值类型", "default": "linear" },
-      "data_type": { "type": "string", "label": "数据类型", "default": "frac" },
-      "channel_avg": { "type": "bool", "label": "通道平均", "default": true },
-      "total_fluid": { "type": "float", "label": "总进液量", "default": 0.0 },
-      "unit": { "type": "string", "label": "单位", "default": "m3" },
-      "marker_file": { "type": "string", "label": "符号/分层文件路径", "default": "" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "interpret.interwell_interp": {
-    "fictional": true,
-    "fictionalNote": "行业通用模板，参数暂为虚构，待甲方确认",
-    "order": ["time_range", "depth_range", "channel_threshold", "plot_type", "output_path"],
-    "params": {
-      "time_range": { "type": "array", "label": "时间范围", "default": [] },
-      "depth_range": { "type": "array", "label": "深度范围", "default": [] },
-      "channel_threshold": { "type": "float", "label": "窜通阈值", "default": 0.5 },
-      "plot_type": { "type": "string", "label": "绘图类型", "default": "heatmap" },
-      "output_path": { "type": "string", "label": "输出路径", "default": "" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "interpret.unstable_interp": {
-    "fictional": true,
-    "fictionalNote": "行业通用模板，参数暂为虚构，待甲方确认",
-    "order": ["time_range", "depth_range", "temp_threshold", "plot_type", "output_path"],
-    "params": {
-      "time_range": { "type": "array", "label": "时间范围", "default": [] },
-      "depth_range": { "type": "array", "label": "深度范围", "default": [] },
-      "temp_threshold": { "type": "float", "label": "温度阈值", "default": 0.5 },
-      "plot_type": { "type": "string", "label": "绘图类型", "default": "heatmap" },
-      "output_path": { "type": "string", "label": "输出路径", "default": "" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "interpret.microseismic_interp": {
-    "fictional": true,
-    "fictionalNote": "行业通用模板，参数暂为虚构，待甲方确认",
-    "order": ["event_filter", "locate_params", "plot_type", "output_path"],
-    "params": {
-      "event_filter": { "type": "string", "label": "事件筛选条件", "default": "magnitude>0" },
-      "locate_params": { "type": "array", "label": "定位参数", "default": [] },
-      "plot_type": { "type": "string", "label": "绘图类型", "default": "scatter3d" },
-      "output_path": { "type": "string", "label": "输出路径", "default": "" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "interpret.wellbore_interp": {
-    "fictional": true,
-    "fictionalNote": "行业通用模板，参数暂为虚构，待甲方确认",
-    "order": ["defect_threshold", "analyze_dim", "plot_type", "output_path"],
-    "params": {
-      "defect_threshold": { "type": "float", "label": "缺陷阈值", "default": 0.5 },
-      "analyze_dim": { "type": "string", "label": "分析维度", "default": "depth" },
-      "plot_type": { "type": "string", "label": "绘图类型", "default": "profile" },
-      "output_path": { "type": "string", "label": "输出路径", "default": "" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "interpret.welltrack_calc": {
-    "fictional": true,
-    "fictionalNote": "行业通用模板，参数暂为虚构，待甲方确认",
-    "order": ["calc_params", "coord_system", "output_path"],
-    "params": {
-      "calc_params": { "type": "array", "label": "计算参数", "default": [] },
-      "coord_system": { "type": "string", "label": "坐标系", "default": "WGS84" },
-      "output_path": { "type": "string", "label": "输出路径", "default": "" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "interpret.flowpres_calc": {
-    "fictional": true,
-    "fictionalNote": "行业通用模板，参数暂为虚构，待甲方确认",
-    "order": ["time_range", "calc_mode", "filter_params", "output_path"],
-    "params": {
-      "time_range": { "type": "array", "label": "时间范围", "default": [] },
-      "calc_mode": { "type": "string", "label": "计算模式", "default": "standard" },
-      "filter_params": { "type": "array", "label": "滤波参数", "default": [] },
-      "output_path": { "type": "string", "label": "输出路径", "default": "" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "interpret.diff_temp_calc": {
-    "fictional": true,
-    "fictionalNote": "行业通用模板，参数暂为虚构，待甲方确认",
-    "order": ["base_time", "depth_range", "diff_params", "output_path"],
-    "params": {
-      "base_time": { "type": "float", "label": "基准时间", "default": 0.0 },
-      "depth_range": { "type": "array", "label": "深度范围", "default": [] },
-      "diff_params": { "type": "array", "label": "差分参数", "default": [] },
-      "output_path": { "type": "string", "label": "输出路径", "default": "" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "interpret.zonal_prod_calc": {
-    "fictional": true,
-    "fictionalNote": "行业通用模板，参数暂为虚构，待甲方确认",
-    "order": ["layer_split", "prod_model", "output_path"],
-    "params": {
-      "layer_split": { "type": "array", "label": "分层划分", "default": [] },
-      "prod_model": { "type": "string", "label": "产量模型", "default": "darcy" },
-      "output_path": { "type": "string", "label": "输出路径", "default": "" }
-    }
+    "note": "待甲方补充业务参数",
+    "order": [],
+    "params": {}
   },
   "display.interp_result": {
-    "fictional": true,
-    "fictionalNote": "行业通用模板，参数暂为虚构，待甲方确认",
-    "order": ["data_path", "plot_type", "color_range", "use_interp", "axis_range", "export_path"],
-    "params": {
-      "data_path": { "type": "string", "label": "数据文件路径", "default": "" },
-      "plot_type": { "type": "string", "label": "绘图类型", "default": "heatmap" },
-      "color_range": { "type": "array", "label": "色标范围", "default": [] },
-      "use_interp": { "type": "bool", "label": "插值开关", "default": true },
-      "axis_range": { "type": "array", "label": "坐标轴范围", "default": [] },
-      "export_path": { "type": "string", "label": "导出路径", "default": "" }
-    }
+    "note": "非外部 EXE 节点，无程序路径；业务参数待甲方补充",
+    "order": [],
+    "params": {}
   },
   "display.preprocess_result": {
-    "fictional": true,
-    "fictionalNote": "行业通用模板，参数暂为虚构，待甲方确认",
-    "order": ["data_path", "plot_type", "color_range", "use_interp", "axis_range", "export_path"],
-    "params": {
-      "data_path": { "type": "string", "label": "数据文件路径", "default": "" },
-      "plot_type": { "type": "string", "label": "绘图类型", "default": "heatmap" },
-      "color_range": { "type": "array", "label": "色标范围", "default": [] },
-      "use_interp": { "type": "bool", "label": "插值开关", "default": true },
-      "axis_range": { "type": "array", "label": "坐标轴范围", "default": [] },
-      "export_path": { "type": "string", "label": "导出路径", "default": "" }
-    }
+    "note": "非外部 EXE 节点，无程序路径；业务参数待甲方补充",
+    "order": [],
+    "params": {}
   },
   "display.multi_result": {
-    "fictional": true,
-    "fictionalNote": "行业通用模板，参数暂为虚构，待甲方确认",
-    "order": ["data_list", "merge_mode", "layout", "color_config", "export_path"],
-    "params": {
-      "data_list": { "type": "array", "label": "数据路径列表", "default": [] },
-      "merge_mode": { "type": "string", "label": "合并模式", "default": "overlay" },
-      "layout": { "type": "string", "label": "绘图布局", "default": "grid" },
-      "color_config": { "type": "array", "label": "色标配置", "default": [] },
-      "export_path": { "type": "string", "label": "导出路径", "default": "" }
-    }
+    "note": "非外部 EXE 节点，无程序路径；业务参数待甲方补充",
+    "order": [],
+    "params": {}
   },
   "display.wellbore_model": {
-    "fictional": true,
-    "fictionalNote": "行业通用模板，参数暂为虚构，待甲方确认",
-    "order": ["data_path", "display_params", "view_angle", "export_path"],
-    "params": {
-      "data_path": { "type": "string", "label": "数据路径", "default": "" },
-      "display_params": { "type": "array", "label": "显示参数", "default": [] },
-      "view_angle": { "type": "string", "label": "视角配置", "default": "front" },
-      "export_path": { "type": "string", "label": "导出路径", "default": "" }
-    }
+    "note": "非外部 EXE 节点，无程序路径；业务参数待甲方补充",
+    "order": [],
+    "params": {}
   },
   "display.well_struct": {
-    "fictional": true,
-    "fictionalNote": "行业通用模板，参数暂为虚构，待甲方确认",
-    "order": ["well_params", "struct_model", "display_style", "export_path"],
-    "params": {
-      "well_params": { "type": "array", "label": "井筒参数", "default": [] },
-      "struct_model": { "type": "string", "label": "结构模型", "default": "casing" },
-      "display_style": { "type": "string", "label": "显示样式", "default": "3d" },
-      "export_path": { "type": "string", "label": "导出路径", "default": "" }
-    }
+    "note": "非外部 EXE 节点，无程序路径；业务参数待甲方补充",
+    "order": [],
+    "params": {}
   }
 }

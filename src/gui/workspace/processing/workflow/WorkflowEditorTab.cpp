@@ -33,6 +33,93 @@
 #include <QPushButton>
 #include <QTextEdit>
 
+namespace {
+
+QString displayNativePath(const QString &path)
+{
+    return QDir::toNativeSeparators(path.trimmed());
+}
+
+QString variantFilesToDisplayText(const QVariant &val)
+{
+    QStringList lines;
+    if (val.typeId() == QMetaType::QVariantList)
+    {
+        for (const QVariant &item : val.toList())
+        {
+            const QString native = displayNativePath(item.toString());
+            if (!native.isEmpty())
+                lines << native;
+        }
+    }
+    return lines.join(QLatin1Char('\n'));
+}
+
+QString pathListToDisplayText(const QStringList &paths)
+{
+    QStringList lines;
+    for (const QString &p : paths)
+    {
+        const QString native = displayNativePath(p);
+        if (!native.isEmpty())
+            lines << native;
+    }
+    return lines.join(QLatin1Char('\n'));
+}
+
+/// 甲方参数范围校验（编辑属性面板时即时提示）
+bool validateNodeParams(const QString &typeId, const QVariantMap &params, QString *errorOut)
+{
+    if (typeId == QLatin1String("preprocess.depth_correct"))
+    {
+        const double step = params.value(QStringLiteral("depth_step")).toDouble();
+        if (step <= 0.0)
+        {
+            if (errorOut)
+                *errorOut = QObject::tr("深度步长必须大于 0");
+            return false;
+        }
+    }
+    else if (typeId == QLatin1String("preprocess.depth_time_correct"))
+    {
+        if (params.value(QStringLiteral("time_scale")).toDouble() <= 0.0)
+        {
+            if (errorOut)
+                *errorOut = QObject::tr("时间缩放系数必须大于 0");
+            return false;
+        }
+        if (params.contains(QStringLiteral("depth_scale"))
+            && params.value(QStringLiteral("depth_scale")).toDouble() <= 0.0)
+        {
+            if (errorOut)
+                *errorOut = QObject::tr("深度缩放系数必须大于 0");
+            return false;
+        }
+    }
+    else if (typeId == QLatin1String("preprocess.data_crop"))
+    {
+        const double depthMin = params.value(QStringLiteral("depth_min")).toDouble();
+        const double depthMax = params.value(QStringLiteral("depth_max")).toDouble();
+        const double timeMin = params.value(QStringLiteral("time_min")).toDouble();
+        const double timeMax = params.value(QStringLiteral("time_max")).toDouble();
+        if (depthMin >= depthMax)
+        {
+            if (errorOut)
+                *errorOut = QObject::tr("最小深度必须小于最大深度");
+            return false;
+        }
+        if (timeMin >= timeMax)
+        {
+            if (errorOut)
+                *errorOut = QObject::tr("最小时间必须小于最大时间");
+            return false;
+        }
+    }
+    return true;
+}
+
+} // namespace
+
 using namespace processing;
 using namespace processing::gui;
 
@@ -133,9 +220,19 @@ void WorkflowEditorTab::setupUi()
     scroll->setWidgetResizable(true);
     scroll->setFrameShape(QFrame::NoFrame);
     m_paramsPanel = new QWidget(scroll);
-    m_paramsForm = new QFormLayout(m_paramsPanel);
-    m_paramsForm->setContentsMargins(4, 4, 4, 4);
-    m_paramsForm->setLabelAlignment(Qt::AlignRight);
+    m_paramsPanel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
+    auto *panelVBox = new QVBoxLayout(m_paramsPanel);
+    panelVBox->setContentsMargins(4, 4, 4, 4);
+    panelVBox->setSpacing(8);
+    m_paramsForm = new QFormLayout();
+    m_paramsForm->setContentsMargins(0, 0, 0, 0);
+    m_paramsForm->setSpacing(10);
+    m_paramsForm->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_paramsForm->setFormAlignment(Qt::AlignLeft | Qt::AlignTop);
+    m_paramsForm->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
+    m_paramsForm->setRowWrapPolicy(QFormLayout::DontWrapRows);
+    panelVBox->addLayout(m_paramsForm);
+    panelVBox->addStretch(1);
     m_paramsForm->addRow(new QLabel(tr("（未选中节点）"), m_paramsPanel));
     scroll->setWidget(m_paramsPanel);
     rl->addWidget(scroll, 1);
@@ -217,6 +314,20 @@ void WorkflowEditorTab::setupConnections()
                 if (id == m_scene->selectedNodeId())
                     rebuildParamForm(id);
             });
+    connect(m_engine, &IWorkflowEngine::edgeAdded, this,
+            [this](const EdgeInstance &edge)
+            {
+                const QString sel = m_scene->selectedNodeId();
+                if (sel == edge.toNode || sel == edge.fromNode)
+                    rebuildParamForm(sel);
+            });
+    connect(m_engine, &IWorkflowEngine::edgeRemoved, this,
+            [this](const EdgeInstance &edge)
+            {
+                const QString sel = m_scene->selectedNodeId();
+                if (sel == edge.toNode || sel == edge.fromNode)
+                    rebuildParamForm(sel);
+            });
     connect(m_engine, &IWorkflowEngine::runStarted, this, [this]
             { showStatus(tr("开始运行...")); });
     connect(m_engine, &IWorkflowEngine::runStopped, this, [this]
@@ -224,6 +335,22 @@ void WorkflowEditorTab::setupConnections()
     connect(m_engine, &IWorkflowEngine::runFinished, this,
             [this](bool ok)
             { showStatus(ok ? tr("全部完成") : tr("运行结束（有失败）"), !ok); });
+    connect(m_engine, &IWorkflowEngine::nodeFinished, this,
+            [this](const QString &, const NodeRunResult &)
+            {
+                const QString sel = m_scene->selectedNodeId();
+                if (sel.isEmpty() || !m_engine)
+                    return;
+                for (const auto &n : m_engine->nodes())
+                {
+                    if (n.instanceId == sel
+                        && n.typeId == QLatin1String("preprocess.format_convert"))
+                    {
+                        rebuildParamForm(sel);
+                        break;
+                    }
+                }
+            });
 }
 
 QByteArray WorkflowEditorTab::currentWorkflowData() const
@@ -312,8 +439,17 @@ void WorkflowEditorTab::onNodeDoubleClicked(const QString &nodeId)
 // 把当前节点的 params 转成 QFormLayout（按 QVariant 类型选 widget）
 void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
 {
+    if (m_rebuildingParamForm)
+        return;
     if (!m_paramsForm || !m_paramsPanel)
         return;
+
+    m_rebuildingParamForm = true;
+    struct RebuildGuard
+    {
+        bool &flag;
+        ~RebuildGuard() { flag = false; }
+    } guard{m_rebuildingParamForm};
 
     // 清空已有行
     while (m_paramsForm->count() > 0)
@@ -357,6 +493,10 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
     bool paramsFictional = false;
     bool hidePropertyPanel = false;
     QString configDialogId;
+    QMap<QString, QStringList> paramOptions;
+    QMap<QString, double> paramFloatMin;
+    QMap<QString, bool> paramFloatMinExclusive;
+    QMap<QString, bool> paramRequired;
     QVariantMap displayParams = info.params;
     if (m_factory)
     {
@@ -366,6 +506,10 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
             {
                 paramLabels = meta.paramLabels;
                 paramOrder = meta.paramOrder;
+                paramOptions = meta.paramOptions;
+                paramFloatMin = meta.paramFloatMin;
+                paramFloatMinExclusive = meta.paramFloatMinExclusive;
+                paramRequired = meta.paramRequired;
                 paramsFictional = meta.clientParamsFictional;
                 hidePropertyPanel = meta.hidePropertyPanel;
                 configDialogId = meta.configDialogId;
@@ -389,14 +533,15 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
             .arg(info.displayName, info.typeId, fictionalNote),
         m_paramsPanel);
     lblHead->setTextFormat(Qt::RichText);
-    m_paramsForm->addRow(lblHead);
+    lblHead->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+    m_paramsForm->addRow(QString(), lblHead);
 
     if (hidePropertyPanel)
     {
         auto *lblHint = new QLabel(tr("此节点暂不在右侧展示参数。"), m_paramsPanel);
         lblHint->setWordWrap(true);
         lblHint->setStyleSheet(QStringLiteral("color:#546E7A; padding: 8px 0;"));
-        m_paramsForm->addRow(lblHint);
+        m_paramsForm->addRow(QString(), lblHint);
         return;
     }
 
@@ -422,11 +567,16 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
     if (!paramOrder.isEmpty())
     {
         keys = paramOrder;
-        for (const QString &k : displayParams.keys())
+        // 仅展示 node_client_params.json 声明的字段，丢弃旧版 Excel 占位字段
+        QVariantMap pruned;
+        for (const QString &k : keys)
         {
-            if (!keys.contains(k))
-                keys.append(k);
+            if (displayParams.contains(k))
+                pruned.insert(k, displayParams.value(k));
         }
+        if (pruned.size() != info.params.size())
+            m_engine->setNodeParams(id, pruned);
+        displayParams = pruned;
     }
     else
     {
@@ -434,17 +584,35 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
         keys.sort();
     }
 
-    // 将 exePath 移到第一行（如果存在）
-    if (keys.contains("exePath"))
     {
-        keys.removeAll("exePath");
-        keys.prepend("exePath");
+        QStringList uniqueKeys;
+        for (const QString &k : keys)
+        {
+            if (!displayParams.contains(k) || uniqueKeys.contains(k))
+                continue;
+            uniqueKeys.append(k);
+        }
+        keys = uniqueKeys;
     }
+
+    const QString typeId = info.typeId;
+    auto applyParams = [this, id, typeId](QVariantMap p)
+    {
+        QString err;
+        if (!validateNodeParams(typeId, p, &err))
+        {
+            showStatus(err, true);
+            return;
+        }
+        m_engine->setNodeParams(id, p);
+    };
 
     for (const QString &key : keys)
     {
         const QVariant v = displayParams.value(key);
         QWidget *editor = nullptr;
+        const bool hasEnumOptions =
+            paramOptions.contains(key) && !paramOptions.value(key).isEmpty();
 
         switch (static_cast<QMetaType::Type>(v.typeId()))
         {
@@ -452,13 +620,13 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
         {
             auto *cb = new QCheckBox(m_paramsPanel);
             cb->setChecked(v.toBool());
-            connect(cb, &QCheckBox::toggled, this, [this, id, key](bool b)
+            connect(cb, &QCheckBox::toggled, this, [this, id, key, applyParams](bool b)
                     {
                     QVariantMap p;
                     for (const auto& n : m_engine->nodes())
                         if (n.instanceId == id) { p = n.params; break; }
                     p[key] = b;
-                    m_engine->setNodeParams(id, p); });
+                    applyParams(p); });
             editor = cb;
             break;
         }
@@ -469,13 +637,13 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
             auto *sp = new QSpinBox(m_paramsPanel);
             sp->setRange(-1000000000, 1000000000);
             sp->setValue(v.toInt());
-            connect(sp, qOverload<int>(&QSpinBox::valueChanged), this, [this, id, key](int x)
+            connect(sp, qOverload<int>(&QSpinBox::valueChanged), this, [this, id, key, applyParams](int x)
                     {
                     QVariantMap p;
                     for (const auto& n : m_engine->nodes())
                         if (n.instanceId == id) { p = n.params; break; }
                     p[key] = x;
-                    m_engine->setNodeParams(id, p); });
+                    applyParams(p); });
             editor = sp;
             break;
         }
@@ -490,7 +658,7 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
             };
             auto *le = new QLineEdit(formatList(v), m_paramsPanel);
             le->setPlaceholderText(tr("逗号分隔，如 0,100"));
-            connect(le, &QLineEdit::editingFinished, this, [this, id, key, le]
+            connect(le, &QLineEdit::editingFinished, this, [this, id, key, le, applyParams]
                     {
                         QVariantMap p;
                         for (const auto &n : m_engine->nodes())
@@ -513,7 +681,7 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
                                 list.append(part);
                         }
                         p[key] = list;
-                        m_engine->setNodeParams(id, p);
+                        applyParams(p);
                     });
             editor = le;
             break;
@@ -523,10 +691,18 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
         {
             auto *dsp = new QDoubleSpinBox(m_paramsPanel);
             dsp->setRange(-1e9, 1e9);
-            dsp->setDecimals(4);
+            dsp->setDecimals(6);
+            if (paramFloatMin.contains(key))
+            {
+                const double lim = paramFloatMin.value(key);
+                if (paramFloatMinExclusive.value(key, false))
+                    dsp->setRange(lim + 1e-9, 1e12);
+                else
+                    dsp->setMinimum(lim);
+            }
             dsp->setValue(v.toDouble());
             connect(dsp, qOverload<double>(&QDoubleSpinBox::valueChanged), this,
-                    [this, id, key](double x)
+                    [this, id, key, applyParams](double x)
                     {
                         QVariantMap p;
                         for (const auto &n : m_engine->nodes())
@@ -536,13 +712,36 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
                                 break;
                             }
                         p[key] = x;
-                        m_engine->setNodeParams(id, p);
+                        applyParams(p);
                     });
             editor = dsp;
             break;
         }
         default:
         {
+            if (hasEnumOptions)
+            {
+                auto *combo = new QComboBox(m_paramsPanel);
+                combo->addItems(paramOptions.value(key));
+                const int idx = combo->findText(v.toString());
+                combo->setCurrentIndex(idx >= 0 ? idx : 0);
+                connect(combo, qOverload<int>(&QComboBox::currentIndexChanged), this,
+                        [this, id, key, combo, applyParams](int)
+                        {
+                            QVariantMap p;
+                            for (const auto &n : m_engine->nodes())
+                                if (n.instanceId == id)
+                                {
+                                    p = n.params;
+                                    break;
+                                }
+                            p[key] = combo->currentText();
+                            applyParams(p);
+                        });
+                editor = combo;
+                break;
+            }
+
             // 字符串：键名包含 path/file/dir 时附加文件浏览按钮
             const QString lk = key.toLower();
             const bool isPath = lk.contains("path") || lk.contains("file") || lk.contains("dir");
@@ -552,14 +751,14 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
                 auto *h = new QHBoxLayout(row);
                 h->setContentsMargins(0, 0, 0, 0);
                 h->setSpacing(4);
-                auto *le = new QLineEdit(v.toString(), row);
+                auto *le = new QLineEdit(displayNativePath(v.toString()), row);
                 auto *btn = new QToolButton(row);
                 btn->setText(QStringLiteral("..."));
                 btn->setToolTip(tr("浏览"));
                 h->addWidget(le, 1);
                 h->addWidget(btn);
 
-                auto commit = [this, id, key, le]()
+                auto commit = [this, id, key, le, applyParams]()
                 {
                     QVariantMap p;
                     for (const auto &n : m_engine->nodes())
@@ -568,8 +767,8 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
                             p = n.params;
                             break;
                         }
-                    p[key] = le->text();
-                    m_engine->setNodeParams(id, p);
+                    p[key] = displayNativePath(le->text());
+                    applyParams(p);
                 };
                 connect(le, &QLineEdit::editingFinished, this, commit);
                 const bool wantDir = lk.contains("dir");
@@ -589,7 +788,7 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
                             }
                             if (!picked.isEmpty())
                             {
-                                le->setText(picked);
+                                le->setText(displayNativePath(picked));
                                 commit();
                             }
                         });
@@ -598,20 +797,21 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
             else
             {
                 auto *le = new QLineEdit(v.toString(), m_paramsPanel);
-                connect(le, &QLineEdit::editingFinished, this, [this, id, key, le]
+                connect(le, &QLineEdit::editingFinished, this, [this, id, key, le, applyParams]
                         {
                         QVariantMap p;
                         for (const auto& n : m_engine->nodes())
                             if (n.instanceId == id) { p = n.params; break; }
                         p[key] = le->text();
-                        m_engine->setNodeParams(id, p); });
+                        applyParams(p); });
                 editor = le;
             }
             break;
         }
         }
-        // 使用中文标签或默认key
         QString labelText = paramLabels.value(key, key);
+        if (paramRequired.value(key, false))
+            labelText += QStringLiteral(" *");
         m_paramsForm->addRow(labelText, editor);
     }
 }
@@ -619,32 +819,23 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
 void WorkflowEditorTab::rebuildDataInputParamForm(const QString &nodeId,
                                                   const QVariantMap &displayParams)
 {
-    auto formatListText = [](const QVariant &val) -> QString
-    {
-        QStringList lines;
-        if (val.typeId() == QMetaType::QVariantList)
-        {
-            for (const QVariant &item : val.toList())
-            {
-                const QString path = item.toString().trimmed();
-                if (!path.isEmpty())
-                    lines << path;
-            }
-        }
-        return lines.join(QLatin1Char('\n'));
-    };
-
-    auto *btnPick = new QPushButton(tr("选择输入文件…"), m_paramsPanel);
+    auto *inputField = new QWidget(m_paramsPanel);
+    auto *inputVBox = new QVBoxLayout(inputField);
+    inputVBox->setContentsMargins(0, 0, 0, 0);
+    inputVBox->setSpacing(6);
+    auto *btnPick = new QPushButton(tr("选择输入文件…"), inputField);
+    btnPick->setFixedHeight(30);
     btnPick->setToolTip(tr("当前仅支持 LAS（*.las）；后续可在参数表中扩展格式"));
-
-    auto *fileList = new QTextEdit(m_paramsPanel);
+    auto *fileList = new QTextEdit(inputField);
     fileList->setReadOnly(true);
-    fileList->setMinimumHeight(120);
+    fileList->setFixedHeight(96);
+    fileList->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     fileList->setPlaceholderText(tr("未选择文件"));
-    fileList->setPlainText(formatListText(displayParams.value(QStringLiteral("input_files"))));
+    fileList->setPlainText(variantFilesToDisplayText(displayParams.value(QStringLiteral("input_files"))));
+    inputVBox->addWidget(btnPick);
+    inputVBox->addWidget(fileList);
 
-    m_paramsForm->addRow(tr("输入文件"), btnPick);
-    m_paramsForm->addRow(QString(), fileList);
+    m_paramsForm->addRow(tr("输入文件"), inputField);
 
     const QString fmt = displayParams.value(QStringLiteral("file_format"), QStringLiteral("LAS")).toString();
     auto *fmtLabel = new QLabel(fmt, m_paramsPanel);
@@ -652,7 +843,7 @@ void WorkflowEditorTab::rebuildDataInputParamForm(const QString &nodeId,
     m_paramsForm->addRow(tr("文件格式"), fmtLabel);
 
     connect(btnPick, &QPushButton::clicked, this,
-            [this, nodeId, fileList, formatListText]()
+            [this, nodeId, fileList]()
             {
                 const QStringList paths = QFileDialog::getOpenFileNames(
                     this,
@@ -664,7 +855,7 @@ void WorkflowEditorTab::rebuildDataInputParamForm(const QString &nodeId,
 
                 QVariantList files;
                 for (const QString &p : paths)
-                    files.append(p);
+                    files.append(displayNativePath(p));
 
                 QVariantMap p;
                 for (const auto &n : m_engine->nodes())
@@ -678,7 +869,7 @@ void WorkflowEditorTab::rebuildDataInputParamForm(const QString &nodeId,
                 p.insert(QStringLiteral("input_files"), files);
                 p.insert(QStringLiteral("file_format"), QStringLiteral("LAS"));
                 m_engine->setNodeParams(nodeId, p);
-                fileList->setPlainText(formatListText(files));
+                fileList->setPlainText(variantFilesToDisplayText(files));
                 showStatus(tr("已选择 %1 个文件").arg(paths.size()));
             });
 }
@@ -686,28 +877,53 @@ void WorkflowEditorTab::rebuildDataInputParamForm(const QString &nodeId,
 void WorkflowEditorTab::rebuildFormatConvertParamForm(const QString &nodeId,
                                                       const QVariantMap &displayParams)
 {
-    auto *hint = new QLabel(tr("输入数据由上游节点（如「数据输入」）连线提供。"), m_paramsPanel);
+    const QStringList upstreamFiles =
+        m_engine ? m_engine->upstreamInputFiles(nodeId, QStringLiteral("in")) : QStringList{};
+
+    auto *hint = new QLabel(tr("输入 LAS 由上游「数据输入」经连线传入；运行本节点或「全部运行」时自动使用下列文件。"),
+                            m_paramsPanel);
     hint->setWordWrap(true);
-    hint->setStyleSheet(QStringLiteral("color:#546E7A; padding: 4px 0;"));
-    m_paramsForm->addRow(hint);
+    hint->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+    hint->setStyleSheet(QStringLiteral("color:#546E7A; padding: 0;"));
+    m_paramsForm->addRow(QString(), hint);
+
+    auto *inFileList = new QTextEdit(m_paramsPanel);
+    inFileList->setReadOnly(true);
+    inFileList->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    inFileList->setFixedHeight(96);
+    if (upstreamFiles.isEmpty())
+    {
+        inFileList->setPlaceholderText(tr("未连接上游或未选择 LAS。请将「数据输入」的「数据文件」口连到本节点「输入」口。"));
+    }
+    else
+    {
+        inFileList->setPlainText(pathListToDisplayText(upstreamFiles));
+    }
+    m_paramsForm->addRow(tr("上游输入文件"), inFileList);
 
     auto *comboOut = new QComboBox(m_paramsPanel);
     comboOut->addItem(QStringLiteral("H5"));
+    comboOut->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    comboOut->setFixedHeight(28);
     const QString outType = displayParams.value(QStringLiteral("output_type"), QStringLiteral("H5")).toString();
     const int idx = comboOut->findText(outType);
     comboOut->setCurrentIndex(idx >= 0 ? idx : 0);
 
-    auto *row = new QWidget(m_paramsPanel);
-    auto *h = new QHBoxLayout(row);
-    h->setContentsMargins(0, 0, 0, 0);
-    h->setSpacing(4);
-    auto *leDir = new QLineEdit(displayParams.value(QStringLiteral("output_dir")).toString(), row);
+    auto *dirRow = new QWidget(m_paramsPanel);
+    auto *dirHBox = new QHBoxLayout(dirRow);
+    dirHBox->setContentsMargins(0, 0, 0, 0);
+    dirHBox->setSpacing(6);
+    auto *leDir = new QLineEdit(
+        displayNativePath(displayParams.value(QStringLiteral("output_dir")).toString()), dirRow);
     leDir->setPlaceholderText(tr("请选择输出目录"));
-    auto *btnDir = new QToolButton(row);
+    leDir->setMinimumHeight(28);
+    leDir->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    auto *btnDir = new QToolButton(dirRow);
     btnDir->setText(QStringLiteral("..."));
     btnDir->setToolTip(tr("选择输出目录"));
-    h->addWidget(leDir, 1);
-    h->addWidget(btnDir);
+    btnDir->setFixedSize(32, 28);
+    dirHBox->addWidget(leDir, 1);
+    dirHBox->addWidget(btnDir, 0, Qt::AlignVCenter);
 
     auto commit = [this, nodeId, comboOut, leDir]()
     {
@@ -721,7 +937,7 @@ void WorkflowEditorTab::rebuildFormatConvertParamForm(const QString &nodeId,
             }
         }
         p.insert(QStringLiteral("output_type"), comboOut->currentText());
-        p.insert(QStringLiteral("output_dir"), leDir->text().trimmed());
+        p.insert(QStringLiteral("output_dir"), displayNativePath(leDir->text()));
         m_engine->setNodeParams(nodeId, p);
     };
 
@@ -734,19 +950,26 @@ void WorkflowEditorTab::rebuildFormatConvertParamForm(const QString &nodeId,
                     this, tr("选择输出目录"), leDir->text());
                 if (!picked.isEmpty())
                 {
-                    leDir->setText(picked);
+                    leDir->setText(displayNativePath(picked));
                     commit();
                 }
             });
 
     auto *btnExport = new QPushButton(tr("导出"), m_paramsPanel);
     btnExport->setToolTip(tr("将节点已生成的 H5 文件另存到指定位置"));
+    btnExport->setFixedHeight(30);
+    btnExport->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     connect(btnExport, &QPushButton::clicked, this, [this, nodeId]()
             { onExportFormatConvert(nodeId); });
 
     m_paramsForm->addRow(tr("输出格式"), comboOut);
-    m_paramsForm->addRow(tr("输出目录"), row);
-    m_paramsForm->addRow(QString(), btnExport);
+    m_paramsForm->addRow(tr("输出目录"), dirRow);
+
+    auto *exportWrap = new QWidget(m_paramsPanel);
+    auto *exportHBox = new QHBoxLayout(exportWrap);
+    exportHBox->setContentsMargins(0, 4, 0, 0);
+    exportHBox->addWidget(btnExport);
+    m_paramsForm->addRow(QString(), exportWrap);
 }
 
 void WorkflowEditorTab::onExportFormatConvert(const QString &nodeId)

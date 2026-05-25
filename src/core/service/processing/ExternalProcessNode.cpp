@@ -21,12 +21,7 @@ namespace processing
     ExternalProcessNode::ExternalProcessNode(NodeMeta meta)
         : m_meta(std::move(meta))
     {
-        // 仅外部算法节点需要 exePath 占位，供属性面板填写
-        if (m_meta.externalProcess
-            && !m_meta.defaultParams.contains(QStringLiteral("exePath")))
-        {
-            m_meta.defaultParams.insert(QStringLiteral("exePath"), QString());
-        }
+        // exePath 由 ProductionNodeParams::applyClientParams 注入 defaultParams，此处不再重复插入
         m_params = m_meta.defaultParams;
     }
 
