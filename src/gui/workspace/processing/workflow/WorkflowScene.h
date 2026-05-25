@@ -93,6 +93,7 @@ namespace processing
             const processing::NodeMeta *metaOf(const QString &typeId) const;
             QString pickFirstFreeOutputPort(const QString &nodeId, const QString &typeId) const;
             QString pickFirstFreeInputPort(const QString &nodeId, const QString &typeId,
+                                           const QString &fromTypeId,
                                            processing::DataFormat fromFormat) const;
 
             void updateAlignmentGuides(NodeItem *movingNode, const QPointF &proposedPos);

@@ -15,6 +15,7 @@
 // =============================================================================
 #include "WorkflowEngine.h"
 #include "LogBus.h"
+#include "NodeCompatibility.h"
 #include "ProductionNodeParams.h"
 
 #include <QUuid>
@@ -27,6 +28,27 @@
 #include <QDir>
 
 namespace processing {
+
+namespace
+{
+
+/// 从工厂缓存中按 typeId 查找节点元数据（validateEdge 用）
+bool lookupNodeMeta(INodeFactory *factory, const QString &typeId, NodeMeta *out)
+{
+    if (!factory || !out)
+        return false;
+    for (const NodeMeta &m : factory->listAll())
+    {
+        if (m.typeId == typeId)
+        {
+            *out = m;
+            return true;
+        }
+    }
+    return false;
+}
+
+} // namespace
 
 namespace {
 
@@ -259,6 +281,19 @@ bool WorkflowEngine::validateEdge(const EdgeInstance& e, QString* reason) const
         if (reason)
             *reason = QStringLiteral("会形成环路");
         return false;
+    }
+
+    // 算法节点兼容性（甲方《算法节点兼容性校验说明》：DAS/DTS/DSS、A/B/C 形态）
+    if (m_factory)
+    {
+        NodeMeta upMeta;
+        NodeMeta downMeta;
+        if (lookupNodeMeta(m_factory, from->info.typeId, &upMeta)
+            && lookupNodeMeta(m_factory, to->info.typeId, &downMeta))
+        {
+            if (!isAlgorithmEdgeCompatible(upMeta, downMeta, reason))
+                return false;
+        }
     }
     return true;
 }
@@ -585,6 +620,36 @@ void WorkflowEngine::runAll()
     if (m_running.exchange(true))
         return;
     m_stopRequested.store(false);
+
+    // 运行前全图兼容性复检（含 C 类终点不得再有出边）
+    {
+        QList<EdgeInstance> es;
+        QHash<QString, QString> idToType;
+        {
+            QMutexLocker lock(&m_mutex);
+            es = m_edges;
+            for (auto it = m_records.constBegin(); it != m_records.constEnd(); ++it)
+                idToType.insert(it.key(), it.value().info.typeId);
+        }
+        QString graphReason;
+        auto typeIdOf = [&idToType](const QString &id) -> QString
+        { return idToType.value(id); };
+        auto metaOf = [this](const QString &typeId) -> const NodeMeta *
+        {
+            static thread_local NodeMeta cache;
+            if (lookupNodeMeta(m_factory, typeId, &cache))
+                return &cache;
+            return nullptr;
+        };
+        if (!validateWorkflowCompatGraph(es, typeIdOf, metaOf, &graphReason))
+        {
+            m_running.store(false);
+            EdgeInstance dummy;
+            emit edgeRejected(dummy, graphReason);
+            return;
+        }
+    }
+
     emit runStarted();
 
     m_runLayers = topoLayers();

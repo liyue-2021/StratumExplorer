@@ -9,6 +9,7 @@ set(SOURCES
     ExternalProcessRunner.cpp
     ExternalProcessNode.cpp
     ParamRangePair.cpp
+    NodeCompatibility.cpp
     LogBus.cpp
     node_client_params.qrc
 )
@@ -21,6 +22,7 @@ set(HEADERS
     ExternalProcessRunner.h
     ExternalProcessNode.h
     ParamRangePair.h
+    NodeCompatibility.h
     LogBus.h
 )
 

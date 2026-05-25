@@ -5,6 +5,7 @@
 #include "service/processing/IWorkflowEngine.h"
 #include "service/processing/INodeFactory.h"
 #include "processing/NodeDefinition.h"
+#include "NodeCompatibility.h"
 
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsSceneContextMenuEvent>
@@ -91,10 +92,12 @@ QString WorkflowScene::pickFirstFreeOutputPort(const QString &nodeId,
 
 QString WorkflowScene::pickFirstFreeInputPort(const QString &nodeId,
                                               const QString &typeId,
+                                              const QString &fromTypeId,
                                               DataFormat fromFormat) const
 {
     // 查询该节点类型的输入端口定义
     const NodeMeta *meta = metaOf(typeId);
+    const NodeMeta *fromMeta = metaOf(fromTypeId);
     if (!meta || meta->inputs.isEmpty() || !m_engine)
         return {};
 
@@ -104,15 +107,15 @@ QString WorkflowScene::pickFirstFreeInputPort(const QString &nodeId,
         if (e.toNode == nodeId)
             used.insert(e.toPort);
 
-    // 优先：未占用 + 格式兼容
+    // 优先：未占用 + HDF5 格式兼容 + 算法语义兼容（与 WorkflowEngine::validateEdge 一致）
     for (const auto &p : meta->inputs)
-        if (!used.contains(p.key) && isCompatible(fromFormat, p.format))
-            return p.key;
-    // 退一步：未占用（让引擎自己拒绝格式）
-    for (const auto &p : meta->inputs)
-        if (!used.contains(p.key))
-            return p.key;
-    // 全占了：返回空，调用方知道连不上
+    {
+        if (used.contains(p.key) || !isCompatible(fromFormat, p.format))
+            continue;
+        if (fromMeta && !isAlgorithmEdgeCompatible(*fromMeta, *meta))
+            continue;
+        return p.key;
+    }
     return {};
 }
 
@@ -476,7 +479,7 @@ void WorkflowScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *e)
                             }
                     }
                     QString toPort = pickFirstFreeInputPort(
-                        target->instanceId(), target->typeId(), outFmt);
+                        target->instanceId(), target->typeId(), from->typeId(), outFmt);
 
                     // 目标节点所有 input 端口都被占用 → 弹菜单允许"替换某条已有连线"
                     if (!fromPort.isEmpty() && toPort.isEmpty())
@@ -537,10 +540,14 @@ void WorkflowScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *e)
                         {
                             reason = tr("目标节点 %1 没有输入端口").arg(tm->displayName);
                         }
+                        else if (fromMeta && tm
+                                 && !isAlgorithmEdgeCompatible(*fromMeta, *tm, &reason))
+                        {
+                            /* reason 已由兼容性模块填写 */
+                        }
                         else
                         {
-                            // 用户在替换菜单里选了取消
-                            reason = tr("已取消");
+                            reason = tr("目标节点没有可连接的输入端口（可能已被占用或算法不兼容）");
                         }
                         EdgeInstance dummy{from->instanceId(), QString(),
                                            target->instanceId(), QString()};
