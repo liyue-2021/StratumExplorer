@@ -31,8 +31,16 @@ NodeItem::NodeItem(const NodeInstance &info, NodeGroup group, NodeKind kind)
 {
     setFlags(ItemIsSelectable | ItemIsMovable | ItemSendsGeometryChanges);
     setAcceptHoverEvents(true);
-    setToolTip(QStringLiteral("%1\n类型: %2").arg(m_title, m_typeId));
+    updateToolTip();
     recomputeSize();
+}
+
+void NodeItem::updateToolTip()
+{
+    setToolTip(QStringLiteral("%1\n序号: %2\n类型: %3")
+                   .arg(m_title,
+                        m_testSeqLabel.isEmpty() ? QStringLiteral("—") : m_testSeqLabel,
+                        m_typeId));
 }
 
 void NodeItem::setStatus(NodeStatus s)
@@ -46,22 +54,47 @@ void NodeItem::setStatus(NodeStatus s)
 void NodeItem::setTestSeqLabel(const QString &label)
 {
     m_testSeqLabel = label.trimmed();
-    setToolTip(QStringLiteral("%1\n序号: %2\n类型: %3")
-                   .arg(m_title,
-                        m_testSeqLabel.isEmpty() ? QStringLiteral("—") : m_testSeqLabel,
-                        m_typeId));
+    updateToolTip();
     prepareGeometryChange();
     recomputeSize();
     update();
 }
 
+void NodeItem::setTestSeqBadgeVisible(bool visible)
+{
+    if (m_testSeqVisible == visible)
+        return;
+    m_testSeqVisible = visible;
+    prepareGeometryChange();
+    recomputeSize();
+    update();
+}
+
+bool NodeItem::showSeqBadge() const
+{
+    return m_testSeqVisible && !m_testSeqLabel.isEmpty();
+}
+
+qreal NodeItem::runButtonsLeft() const
+{
+    return m_width - kPad - kBtnSize * 2 - 4;
+}
+
+QRectF NodeItem::runButtonRect() const
+{
+    const qreal left = runButtonsLeft();
+    return QRectF(left, 3, kBtnSize, kBtnSize);
+}
+
+QRectF NodeItem::stopButtonRect() const
+{
+    return QRectF(m_width - kPad - kBtnSize, 3, kBtnSize, kBtnSize);
+}
+
 void NodeItem::setTitle(const QString &title)
 {
     m_title = title;
-    setToolTip(QStringLiteral("%1\n序号: %2\n类型: %3")
-                   .arg(m_title,
-                        m_testSeqLabel.isEmpty() ? QStringLiteral("—") : m_testSeqLabel,
-                        m_typeId));
+    updateToolTip();
     prepareGeometryChange();
     recomputeSize();
     update();
@@ -228,7 +261,7 @@ void NodeItem::recomputeSize()
 
     QFontMetricsF fmT(fTitle), fmS(fSub);
     qreal wTitle = fmT.horizontalAdvance(m_title) + kPad * 2 + kBtnSize * 2 + 8;
-    qreal wSeq = m_testSeqLabel.isEmpty() ? 0.0 : fmS.horizontalAdvance(m_testSeqLabel) + 24.0;
+    qreal wSeq = showSeqBadge() ? fmS.horizontalAdvance(m_testSeqLabel) + 24.0 : 0.0;
     qreal wType = fmS.horizontalAdvance(m_typeId) + kPad * 2;
     qreal wStat = fmS.horizontalAdvance(toString(m_status)) + kPad * 2;
 
@@ -283,9 +316,9 @@ void NodeItem::paint(QPainter *p, const QStyleOptionGraphicsItem *opt, QWidget *
     QFontMetricsF fmT(fTitle);
     QString elidedTitle = fmT.elidedText(
         m_title, Qt::ElideRight, m_width - kPad * 2 - kBtnSize * 2 - 8);
-    const qreal btnLeft = m_width - kPad - kBtnSize * 2 - 4;
+    const qreal btnLeft = runButtonsLeft();
     qreal seqRight = btnLeft - 4;
-    if (!m_testSeqLabel.isEmpty())
+    if (showSeqBadge())
     {
         QFont fSeq;
         fSeq.setBold(true);
@@ -309,8 +342,8 @@ void NodeItem::paint(QPainter *p, const QStyleOptionGraphicsItem *opt, QWidget *
     p->drawText(QRectF(kPad, 2, qMax(40.0, seqRight - kPad), 20),
                 Qt::AlignLeft | Qt::AlignVCenter, elidedTitle);
 
-    QRectF btnRun(btnLeft, 3, kBtnSize, kBtnSize);
-    QRectF btnStop(m_width - kPad - kBtnSize, 3, kBtnSize, kBtnSize);
+    const QRectF btnRun = runButtonRect();
+    const QRectF btnStop = stopButtonRect();
     p->setBrush(Qt::white);
     p->setPen(QPen(QColor("#607D8B"), 0.8));
     p->drawEllipse(btnRun);
@@ -397,8 +430,8 @@ void NodeItem::paint(QPainter *p, const QStyleOptionGraphicsItem *opt, QWidget *
 void NodeItem::mousePressEvent(QGraphicsSceneMouseEvent *e)
 {
     // 1. 检查是否点击了运行按钮
-    QRectF btnRun(m_width - kPad - kBtnSize * 2 - 4, 3, kBtnSize, kBtnSize);
-    QRectF btnStop(m_width - kPad - kBtnSize, 3, kBtnSize, kBtnSize);
+    const QRectF btnRun = runButtonRect();
+    const QRectF btnStop = stopButtonRect();
     auto *ws = dynamic_cast<WorkflowScene *>(scene());
     if (btnRun.contains(e->pos()))
     {

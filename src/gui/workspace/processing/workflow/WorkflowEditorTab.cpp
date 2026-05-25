@@ -401,6 +401,22 @@ void WorkflowEditorTab::setupUi()
         btn->setStyleSheet("QToolButton { color: #37474F; background: transparent; }"
                            "QToolButton:checked { background: rgba(55, 71, 79, 0.1); }");
     }
+    m_toolbar->addSeparator();
+    auto *aTestSeq = m_toolbar->addAction(tr("显示序号角标"));
+    aTestSeq->setCheckable(true);
+    aTestSeq->setChecked(false);
+    aTestSeq->setToolTip(tr("显示/隐藏节点标题旁的甲方序号角标（悬停节点仍可看 tooltip 序号）"));
+    connect(aTestSeq, &QAction::toggled, this, [this, aTestSeq](bool on)
+            {
+        if (m_scene)
+            m_scene->setTestSeqBadgeVisible(on);
+        aTestSeq->setText(on ? tr("隐藏序号角标") : tr("显示序号角标"));
+    });
+    if (auto *btnSeq = qobject_cast<QToolButton *>(m_toolbar->widgetForAction(aTestSeq)))
+    {
+        btnSeq->setStyleSheet("QToolButton { color: #37474F; background: transparent; }"
+                              "QToolButton:checked { background: rgba(230, 81, 0, 0.12); }");
+    }
     root->addWidget(m_toolbar);
 
     // ---- 中央：左 节点库 / 中 画布 / 右 参数面板 ----

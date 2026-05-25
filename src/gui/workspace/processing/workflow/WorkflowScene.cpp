@@ -54,6 +54,18 @@ void WorkflowScene::requestStopAll()
         m_engine->stop();
 }
 
+void WorkflowScene::setTestSeqBadgeVisible(bool visible)
+{
+    if (m_testSeqBadgeVisible == visible)
+        return;
+    m_testSeqBadgeVisible = visible;
+    for (auto *item : std::as_const(m_nodeItems))
+    {
+        if (item)
+            item->setTestSeqBadgeVisible(visible);
+    }
+}
+
 NodeItem *WorkflowScene::nodeItemAt(const QPointF &scenePos) const
 {
     const auto its = items(scenePos);
@@ -201,6 +213,7 @@ void WorkflowScene::onNodeAdded(const NodeInstance &n)
     // 创建新的节点视图对象并加入画布
     auto *item = new NodeItem(n, g, k);
     item->setTestSeqLabel(nodeTestSeqLabel(n.typeId, funcId));
+    item->setTestSeqBadgeVisible(m_testSeqBadgeVisible);
     item->setPos(n.position);
     // 如果节点有历史尺寸数据则还原，否则使用默认尺寸
     if (n.size.isValid() && n.size.width() > 0 && n.size.height() > 0)

@@ -65,6 +65,10 @@ namespace processing
             // 请求停止所有运行中的节点（供 NodeItem 停止按钮）
             void requestStopAll();
 
+            /// 是否绘制甲方序号角标（默认关；序号仍保留在 tooltip）
+            void setTestSeqBadgeVisible(bool visible);
+            bool testSeqBadgeVisible() const { return m_testSeqBadgeVisible; }
+
         signals:
             // 用户在画布上双击节点。WorkflowEditorTab 会据此对 display.* 节点
             // 弹出可视化窗口（QCustomPlot）。
@@ -125,6 +129,8 @@ namespace processing
             QPointer<NodeItem> m_pendingFrom;
             QPointer<NodeItem> m_pendingTo;
             QGraphicsLineItem *m_previewLine = nullptr;
+
+            bool m_testSeqBadgeVisible = false;
         };
 
     }

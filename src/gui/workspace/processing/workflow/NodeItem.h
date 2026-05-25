@@ -61,8 +61,10 @@ namespace processing
             void setStatus(processing::NodeStatus s);
             // 更新节点标题（用于重命名操作）
             void setTitle(const QString &title);
-            /// 临时测试角标：甲方文档序号（如「8·DAS·B」），正式版可关闭
+            /// 临时测试角标文案（如「8·DAS·B」）；是否绘制由 setTestSeqBadgeVisible 控制
             void setTestSeqLabel(const QString &label);
+            void setTestSeqBadgeVisible(bool visible);
+            bool testSeqBadgeVisible() const { return m_testSeqVisible; }
             // 设置节点卡片的宽高（序列化还原时由 WorkflowScene 调用，范围有限制）
             void setSize(qreal w, qreal h);
             // 获取当前节点卡片尺寸
@@ -96,17 +98,23 @@ namespace processing
             QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 
         private:
+            void updateToolTip();
             void recomputeSize();
             QColor groupColor() const;
             QColor statusColor() const;
 
             QPointF portCenter(Side s) const;
             QRectF gripRect() const; // 右下 resize 拖柄 (local)
+            bool showSeqBadge() const;
+            qreal runButtonsLeft() const;
+            QRectF runButtonRect() const;
+            QRectF stopButtonRect() const;
 
             QString m_id;
             QString m_title;
             QString m_typeId;
-            QString m_testSeqLabel; ///< 画布角标，空则不绘制
+            QString m_testSeqLabel;
+            bool m_testSeqVisible = false;
             processing::NodeGroup m_group;
             processing::NodeKind m_kind;
             processing::NodeStatus m_status = processing::NodeStatus::Idle;
