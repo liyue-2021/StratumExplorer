@@ -33,6 +33,12 @@ core.*
 /docs/dev/
 /chat.md
 
+# docs 本地资料/解压临时文件（不进仓库；已跟踪的 docs 文件保持不变）
+/docs/_compat*
+/docs/_compat_docx_tmp/
+/docs/_compat_text.txt
+/docs/*-20260524*.docx
+
 # 构建日志目录
 /tools/build/logs/
 
