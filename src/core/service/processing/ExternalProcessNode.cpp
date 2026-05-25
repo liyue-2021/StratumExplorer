@@ -9,6 +9,7 @@
 //        业务 HDF5 由后端读写。展示类节点（externalProcess=false）不启动 EXE。
 // =============================================================================
 #include "ExternalProcessNode.h"
+#include "ParamRangePair.h"
 
 #include <QDir>
 #include <QFile>
@@ -186,6 +187,9 @@ namespace processing
         // 从 params 中提取算法参数（移除前端管理字段）
         req.params = m_params;
         req.params.remove(QStringLiteral("exePath"));
+
+        // 范围对 min/max → legacy 数组字段（兼容后端 HDF5 协议）
+        syncLegacyRangeArrays(req.params, paramRangePairsForTypeId(m_meta.typeId));
 
         req.outputPath = buildOutputPath();
 

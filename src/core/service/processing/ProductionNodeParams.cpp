@@ -25,6 +25,8 @@ namespace processing::production
             QMap<QString, QStringList> options;
             QMap<QString, double> floatMin;
             QMap<QString, bool> floatMinExclusive;
+            QMap<QString, double> floatMax;
+            QMap<QString, bool> floatMaxExclusive;
             QMap<QString, bool> required;
             bool fictional = false;
             bool hidePropertyPanel = false;
@@ -147,6 +149,16 @@ namespace processing::production
                             spec.floatMin.insert(key, p.value(QStringLiteral("min")).toDouble());
                             spec.floatMinExclusive.insert(key, false);
                         }
+                        if (p.contains(QStringLiteral("maxExclusive")))
+                        {
+                            spec.floatMax.insert(key, p.value(QStringLiteral("maxExclusive")).toDouble());
+                            spec.floatMaxExclusive.insert(key, true);
+                        }
+                        else if (p.contains(QStringLiteral("max")))
+                        {
+                            spec.floatMax.insert(key, p.value(QStringLiteral("max")).toDouble());
+                            spec.floatMaxExclusive.insert(key, false);
+                        }
                         if (p.value(QStringLiteral("required")).toBool(false))
                             spec.required.insert(key, true);
                     }
@@ -179,6 +191,8 @@ namespace processing::production
         meta.paramOptions = spec.options;
         meta.paramFloatMin = spec.floatMin;
         meta.paramFloatMinExclusive = spec.floatMinExclusive;
+        meta.paramFloatMax = spec.floatMax;
+        meta.paramFloatMaxExclusive = spec.floatMaxExclusive;
         meta.paramRequired = spec.required;
         meta.clientParamsFictional = spec.fictional;
         meta.hidePropertyPanel = spec.hidePropertyPanel;

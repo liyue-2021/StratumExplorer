@@ -1,6 +1,7 @@
 # 工作流编辑器子模块
 set(SOURCES
     WorkflowEditorTab.cpp
+    ParamRangePairUi.cpp
     WorkflowScene.cpp
     WorkflowView.cpp
     NodeItem.cpp
@@ -11,6 +12,7 @@ set(SOURCES
 )
 set(HEADERS
     WorkflowEditorTab.h
+    ParamRangePairUi.h
     WorkflowScene.h
     WorkflowView.h
     NodeItem.h

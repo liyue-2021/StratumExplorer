@@ -1,6 +1,6 @@
 {
   "_fileMeta": {
-    "note": "已清空旧版占位字段。外部 EXE 节点的 exePath（程序路径）由 ProductionNodeParams 代码注入，勿写进 JSON。"
+    "note": "外部 EXE 节点的 exePath（程序路径）由 ProductionNodeParams 代码注入。预处理 23 个节点参数已由甲方确认。"
   },
   "input.data_input": {
     "note": "非外部 EXE 节点，无程序路径；业务参数待甲方补充",
@@ -13,119 +13,287 @@
     "params": {}
   },
   "preprocess.depth_correct": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认参数（func_depth_correct）",
+    "order": ["interp_method", "depth_step", "bound"],
+    "params": {
+      "interp_method": {
+        "type": "string",
+        "label": "插值方法",
+        "default": "linear",
+        "options": ["linear", "cubic", "nearest"],
+        "required": true
+      },
+      "depth_step": {
+        "type": "float",
+        "label": "深度步长",
+        "default": 0.5,
+        "minExclusive": 0,
+        "required": true
+      },
+      "bound": {
+        "type": "string",
+        "label": "边界处理方式",
+        "default": "clip",
+        "options": ["clip", "pad", "wrap"]
+      }
+    }
   },
   "preprocess.depth_time_correct": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_depth_time_correct）",
+    "order": ["time_offset", "time_scale", "depth_offset", "depth_scale"],
+    "params": {
+      "time_offset": { "type": "float", "label": "时间偏移量", "default": 0.0, "required": true },
+      "time_scale": { "type": "float", "label": "时间缩放系数", "default": 1.0, "minExclusive": 0, "required": true },
+      "depth_offset": { "type": "float", "label": "深度偏移量", "default": 0.0 },
+      "depth_scale": { "type": "float", "label": "深度缩放系数", "default": 1.0, "minExclusive": 0 }
+    }
   },
   "preprocess.data_crop": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_data_crop）",
+    "order": ["depth_min", "depth_max", "time_min", "time_max"],
+    "params": {
+      "depth_min": { "type": "float", "label": "最小深度", "default": 0.0, "required": true },
+      "depth_max": { "type": "float", "label": "最大深度", "default": 1000.0, "required": true },
+      "time_min": { "type": "float", "label": "最小时间", "default": 0.0, "required": true },
+      "time_max": { "type": "float", "label": "最大时间", "default": 1000.0, "required": true }
+    }
   },
   "preprocess.data_merge": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_data_merge）",
+    "order": ["concat_axis", "channel_min", "channel_max", "sample_points", "fill_missing"],
+    "params": {
+      "concat_axis": { "type": "string", "label": "拼接轴", "default": "depth", "options": ["depth", "time"] },
+      "channel_min": { "type": "float", "label": "最小通道", "default": 0.0, "min": 0 },
+      "channel_max": { "type": "float", "label": "最大通道", "default": 0.0, "min": 0 },
+      "sample_points": { "type": "int", "label": "采样点数", "default": 0, "min": 0 },
+      "fill_missing": { "type": "bool", "label": "缺失值填充", "default": false }
+    }
   },
   "preprocess.das_convert": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_das_convert）",
+    "order": ["fs", "transform_mode", "norm_min", "norm_max", "win_len", "clip_value"],
+    "params": {
+      "fs": { "type": "float", "label": "采样率", "default": 1000.0, "minExclusive": 0, "required": true },
+      "transform_mode": { "type": "string", "label": "转换模式", "default": "rms", "options": ["rms", "abs", "log", "phase"] },
+      "norm_min": { "type": "float", "label": "归一化最小值", "default": 0.0 },
+      "norm_max": { "type": "float", "label": "归一化最大值", "default": 1.0 },
+      "win_len": { "type": "int", "label": "窗口长度", "default": 10, "min": 1 },
+      "clip_value": { "type": "string", "label": "幅值裁剪", "default": "" }
+    }
   },
   "preprocess.lfdas_extract": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_das_lf_extract）",
+    "order": ["f_low", "f_high", "fs", "filter_type", "win_len", "order", "down_factor", "parallel_io", "window_type"],
+    "params": {
+      "f_low": { "type": "float", "label": "低频截止频率", "default": 1.0, "min": 0, "required": true },
+      "f_high": { "type": "float", "label": "高频截止频率", "default": 50.0, "minExclusive": 0, "required": true },
+      "fs": { "type": "float", "label": "采样率", "default": 1000.0, "minExclusive": 0, "required": true },
+      "filter_type": { "type": "string", "label": "滤波器类型", "default": "FIR", "options": ["FIR", "IIR"] },
+      "win_len": { "type": "int", "label": "窗口长度", "default": 50, "min": 1 },
+      "order": { "type": "int", "label": "滤波器阶数", "default": 5, "min": 1 },
+      "down_factor": { "type": "int", "label": "降采样系数", "default": 1, "min": 1 },
+      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true },
+      "window_type": { "type": "string", "label": "窗函数", "default": "hann", "options": ["hann", "hamming"] }
+    }
   },
   "preprocess.fk_analysis": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_das_fk_analysis）",
+    "order": ["fs", "dx", "depth_min", "depth_max", "time_min", "time_max", "win_type", "fk_mode"],
+    "params": {
+      "fs": { "type": "float", "label": "采样率", "default": 1000.0, "minExclusive": 0, "required": true },
+      "dx": { "type": "float", "label": "深度/通道间距", "default": 1.0, "minExclusive": 0, "required": true },
+      "depth_min": { "type": "float", "label": "最小深度", "default": 0.0, "min": 0 },
+      "depth_max": { "type": "float", "label": "最大深度", "default": 1000.0, "min": 0 },
+      "time_min": { "type": "float", "label": "最小时间", "default": 0.0, "min": 0 },
+      "time_max": { "type": "float", "label": "最大时间", "default": 1000.0, "min": 0 },
+      "win_type": { "type": "string", "label": "窗函数", "default": "hann", "options": ["hann", "hamming"] },
+      "fk_mode": { "type": "string", "label": "谱模式", "default": "amp", "options": ["amp", "power"] }
+    }
   },
   "preprocess.fft_extract": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_das_depth_freq_fft）",
+    "order": ["fs", "win_len", "overlap", "f_min", "f_max", "window_type", "detrend"],
+    "params": {
+      "fs": { "type": "float", "label": "采样率", "default": 1000.0, "minExclusive": 0, "required": true },
+      "win_len": { "type": "int", "label": "FFT 窗口长度", "default": 1024, "min": 1 },
+      "overlap": { "type": "float", "label": "窗口重叠率", "default": 0.5, "min": 0, "maxExclusive": 1 },
+      "f_min": { "type": "float", "label": "最小频率", "default": 0.0, "min": 0 },
+      "f_max": { "type": "float", "label": "最大频率", "default": 500.0, "minExclusive": 0 },
+      "window_type": { "type": "string", "label": "窗函数", "default": "hann", "options": ["hann", "hamming"] },
+      "detrend": { "type": "bool", "label": "去趋势", "default": true }
+    }
   },
   "preprocess.bandpass_filter": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_das_bandpass_filter）",
+    "order": ["f_low", "f_high", "fs", "order", "zero_phase", "parallel_io", "window_type"],
+    "params": {
+      "f_low": { "type": "float", "label": "低频截止", "default": 10.0, "minExclusive": 0, "required": true },
+      "f_high": { "type": "float", "label": "高频截止", "default": 200.0, "minExclusive": 0, "required": true },
+      "fs": { "type": "float", "label": "采样率", "default": 1000.0, "minExclusive": 0, "required": true },
+      "order": { "type": "int", "label": "滤波器阶数", "default": 5, "min": 1 },
+      "zero_phase": { "type": "bool", "label": "零相位滤波", "default": true },
+      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true },
+      "window_type": { "type": "string", "label": "窗函数", "default": "hann", "options": ["hann", "hamming"] }
+    }
   },
   "preprocess.downsample": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_das_downsample）",
+    "order": ["factor", "fs", "axis", "anti_alias", "new_fs"],
+    "params": {
+      "factor": { "type": "int", "label": "降采样系数", "default": 2, "min": 2, "required": true },
+      "fs": { "type": "float", "label": "采样率", "default": 1000.0, "minExclusive": 0, "required": true },
+      "axis": { "type": "string", "label": "降采样轴", "default": "time", "options": ["time", "depth"] },
+      "anti_alias": { "type": "bool", "label": "抗混叠", "default": true },
+      "new_fs": { "type": "string", "label": "目标采样率", "default": "" }
+    }
   },
   "preprocess.fts_extract": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_das_stft_fts）",
+    "order": ["fs", "win_len", "overlap", "f_min", "f_max", "window_type", "output_mode"],
+    "params": {
+      "fs": { "type": "float", "label": "采样率", "default": 1000.0, "minExclusive": 0, "required": true },
+      "win_len": { "type": "int", "label": "STFT 窗口长度", "default": 256, "min": 1 },
+      "overlap": { "type": "float", "label": "重叠率", "default": 0.5, "min": 0, "maxExclusive": 1 },
+      "f_min": { "type": "float", "label": "最小频率", "default": 0.0, "min": 0 },
+      "f_max": { "type": "float", "label": "最大频率", "default": 500.0, "minExclusive": 0 },
+      "window_type": { "type": "string", "label": "窗函数", "default": "hann", "options": ["hann", "hamming", "blackman", "boxcar"] },
+      "output_mode": { "type": "string", "label": "输出模式", "default": "amp", "options": ["amp", "power", "phase"] }
+    }
   },
   "preprocess.mainfreq_split": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_das_main_freq_split）",
+    "order": ["depth_min", "depth_max", "time_min", "time_max", "fs", "band_min", "band_max", "parallel_io"],
+    "params": {
+      "depth_min": { "type": "float", "label": "最小深度", "default": 0.0, "min": 0, "required": true },
+      "depth_max": { "type": "float", "label": "最大深度", "default": 1000.0, "min": 0, "required": true },
+      "time_min": { "type": "float", "label": "最小时间", "default": 0.0, "min": 0, "required": true },
+      "time_max": { "type": "float", "label": "最大时间", "default": 1000.0, "min": 0, "required": true },
+      "fs": { "type": "float", "label": "采样率", "default": 1000.0, "minExclusive": 0, "required": true },
+      "band_min": { "type": "float", "label": "频段下限", "default": 0.0, "min": 0 },
+      "band_max": { "type": "float", "label": "频段上限", "default": 500.0, "minExclusive": 0 },
+      "parallel_io": { "type": "bool", "label": "并行 IO", "default": false }
+    }
   },
   "preprocess.fbe_extract": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_das_freq_band_energy）",
+    "order": ["band_min", "band_max", "win_len", "energy_mode", "fs", "smooth_win", "parallel_io"],
+    "params": {
+      "band_min": { "type": "float", "label": "频段下限", "default": 0.0, "min": 0, "required": true },
+      "band_max": { "type": "float", "label": "频段上限", "default": 100.0, "minExclusive": 0, "required": true },
+      "win_len": { "type": "int", "label": "窗口长度", "default": 10, "min": 1, "required": true },
+      "energy_mode": { "type": "string", "label": "能量模式", "default": "rms", "options": ["rms", "sum", "mean"], "required": true },
+      "fs": { "type": "float", "label": "采样率", "default": 1000.0, "minExclusive": 0, "required": true },
+      "smooth_win": { "type": "int", "label": "平滑窗口", "default": 0, "min": 0 },
+      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true }
+    }
   },
   "preprocess.moving_avg": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_das_smooth_filter）",
+    "order": ["mode", "win_len", "axis", "zero_phase", "parallel_io", "padding"],
+    "params": {
+      "mode": { "type": "string", "label": "滤波模式", "default": "mean", "options": ["mean", "median"], "required": true },
+      "win_len": { "type": "int", "label": "窗口长度", "default": 5, "min": 1, "required": true },
+      "axis": { "type": "string", "label": "滤波轴", "default": "time", "options": ["time", "depth", "both"], "required": true },
+      "zero_phase": { "type": "bool", "label": "零相位", "default": true },
+      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true },
+      "padding": { "type": "string", "label": "边界填充", "default": "reflect", "options": ["reflect", "constant", "edge", "symmetric", "wrap"] }
+    }
   },
   "preprocess.slow_strain": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_das_slow_strain）",
+    "order": ["method", "cut_freq", "fs", "poly_order", "parallel_io"],
+    "params": {
+      "method": { "type": "string", "label": "提取方法", "default": "lowpass", "options": ["lowpass", "poly_fit", "moving_avg"], "required": true },
+      "cut_freq": { "type": "float", "label": "截止频率", "default": 1.0, "minExclusive": 0, "required": true },
+      "fs": { "type": "float", "label": "采样率", "default": 1000.0, "minExclusive": 0, "required": true },
+      "poly_order": { "type": "int", "label": "多项式阶数", "default": 2, "min": 1 },
+      "parallel_io": { "type": "bool", "label": "并行 IO", "default": false }
+    }
   },
   "preprocess.dts_denoise": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_dts_denoise）",
+    "order": ["denoise_method", "win_len", "wavelet", "parallel_io"],
+    "params": {
+      "denoise_method": { "type": "string", "label": "去噪方法", "default": "smooth", "options": ["smooth", "wavelet", "median"], "required": true },
+      "win_len": { "type": "int", "label": "窗口长度", "default": 5, "min": 1, "required": true },
+      "wavelet": { "type": "string", "label": "小波基", "default": "db4", "options": ["db4", "db8", "sym4", "haar"] },
+      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true }
+    }
   },
   "preprocess.temp_correct": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_dts_temp_correct）",
+    "order": ["correct_method", "poly_order", "parallel_io"],
+    "params": {
+      "correct_method": { "type": "string", "label": "矫正方法", "default": "linear", "options": ["linear", "poly", "point", "global"], "required": true },
+      "poly_order": { "type": "int", "label": "多项式阶数", "default": 1, "min": 1 },
+      "parallel_io": { "type": "bool", "label": "并行 IO", "default": false }
+    }
   },
   "preprocess.temp_diff": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_dts_temp_diff）",
+    "order": ["axis", "base_time", "order", "parallel_io"],
+    "params": {
+      "axis": { "type": "string", "label": "差分轴", "default": "time", "options": ["time", "depth"], "required": true },
+      "base_time": { "type": "float", "label": "本底时间", "default": 0.0, "min": 0, "required": true },
+      "order": { "type": "int", "label": "差分阶数", "default": 1, "min": 1, "max": 2 },
+      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true }
+    }
   },
   "preprocess.dtgs_gradient": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_dts_temp_gradient）",
+    "order": ["depth_step", "algorithm", "boundary_order", "parallel_io"],
+    "params": {
+      "depth_step": { "type": "float", "label": "深度步长", "default": 0.5, "minExclusive": 0, "required": true },
+      "algorithm": { "type": "string", "label": "梯度算法", "default": "central", "options": ["central", "forward", "backward"], "required": true },
+      "boundary_order": { "type": "int", "label": "边界阶数", "default": 2, "min": 1, "max": 3 },
+      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true }
+    }
   },
   "preprocess.baseline_build": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_dts_build_baseline）",
+    "order": ["method", "ref_time_min", "ref_time_max", "depth_min", "depth_max", "poly_order", "parallel_io"],
+    "params": {
+      "method": { "type": "string", "label": "基线方法", "default": "mean", "options": ["mean", "median", "poly"], "required": true },
+      "ref_time_min": { "type": "float", "label": "参考时间下限", "default": 0.0, "min": 0, "required": true },
+      "ref_time_max": { "type": "float", "label": "参考时间上限", "default": 1000.0, "min": 0, "required": true },
+      "depth_min": { "type": "float", "label": "最小深度", "default": 0.0, "min": 0, "required": true },
+      "depth_max": { "type": "float", "label": "最大深度", "default": 1000.0, "min": 0, "required": true },
+      "poly_order": { "type": "int", "label": "多项式阶数", "default": 2, "min": 1 },
+      "parallel_io": { "type": "bool", "label": "并行 IO", "default": false }
+    }
   },
   "preprocess.strain_disturb": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_dss_disturb_extract）",
+    "order": ["method", "base_mode", "fs", "enhance", "hp_freq", "parallel_io"],
+    "params": {
+      "method": { "type": "string", "label": "扰动提取方法", "default": "hpfilter", "options": ["hpfilter", "detrend", "base_remove"], "required": true },
+      "base_mode": { "type": "string", "label": "基线模式", "default": "mean", "options": ["mean", "median", "initial"], "required": true },
+      "fs": { "type": "float", "label": "采样率", "default": 1000.0, "minExclusive": 0, "required": true },
+      "enhance": { "type": "float", "label": "增强系数", "default": 1.0, "min": 1.0 },
+      "hp_freq": { "type": "float", "label": "高通截止频率", "default": 1.0, "minExclusive": 0 },
+      "parallel_io": { "type": "bool", "label": "并行 IO", "default": false }
+    }
   },
   "preprocess.temp_coupling": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_dss_temp_couple_separate）",
+    "order": ["couple_model", "coeff", "poly_order", "parallel_io"],
+    "params": {
+      "couple_model": { "type": "string", "label": "耦合模型", "default": "linear", "options": ["linear", "nonlinear"], "required": true },
+      "coeff": { "type": "float", "label": "耦合系数", "default": 1.0, "required": true },
+      "poly_order": { "type": "int", "label": "多项式阶数", "default": 1, "min": 1 },
+      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true }
+    }
   },
   "preprocess.baseline_calib": {
-    "note": "待甲方补充业务参数",
-    "order": [],
-    "params": {}
+    "note": "甲方已确认（func_dss_baseline_calib）",
+    "order": ["base_method", "ref_seg_min", "ref_seg_max", "calib_mode", "parallel_io"],
+    "params": {
+      "base_method": { "type": "string", "label": "基线校准方法", "default": "linear", "options": ["linear", "offset", "poly"], "required": true },
+      "ref_seg_min": { "type": "float", "label": "参考段下限", "default": 0.0, "min": 0, "required": true },
+      "ref_seg_max": { "type": "float", "label": "参考段上限", "default": 1000.0, "min": 0, "required": true },
+      "calib_mode": { "type": "string", "label": "校准模式", "default": "global", "options": ["global", "sectional"] },
+      "parallel_io": { "type": "bool", "label": "并行 IO", "default": true }
+    }
   },
   "preprocess.phys_convert": {
     "note": "待甲方补充业务参数",

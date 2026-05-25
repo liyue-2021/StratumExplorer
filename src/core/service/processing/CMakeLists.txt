@@ -8,6 +8,7 @@ set(SOURCES
     ProductionNodeParams.cpp
     ExternalProcessRunner.cpp
     ExternalProcessNode.cpp
+    ParamRangePair.cpp
     LogBus.cpp
     node_client_params.qrc
 )
@@ -19,6 +20,7 @@ set(HEADERS
     ProductionNodeParams.h
     ExternalProcessRunner.h
     ExternalProcessNode.h
+    ParamRangePair.h
     LogBus.h
 )
 

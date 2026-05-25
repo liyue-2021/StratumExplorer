@@ -1,5 +1,7 @@
 #include "WorkflowEditorTab.h"
+#include "ParamRangePairUi.h"
 #include "WorkflowScene.h"
+#include "ParamRangePair.h"
 #include "LogDock.h"
 #include "WorkflowView.h"
 #include "NodePalette.h"
@@ -32,8 +34,20 @@
 #include <QComboBox>
 #include <QPushButton>
 #include <QTextEdit>
+#include <QSet>
 
 namespace {
+
+/// 属性面板（右侧）最小宽度，避免拖窄后 SpinBox / 路径行被裁切
+constexpr int kPropertyPanelMinWidth = 300;
+
+QLabel *makeParamFormLabel(const QString &text, QWidget *parent)
+{
+    auto *lbl = new QLabel(text, parent);
+    lbl->setAlignment(Qt::AlignJustify | Qt::AlignVCenter);
+    lbl->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred);
+    return lbl;
+}
 
 QString displayNativePath(const QString &path)
 {
@@ -67,54 +81,245 @@ QString pathListToDisplayText(const QStringList &paths)
     return lines.join(QLatin1Char('\n'));
 }
 
+void applyIntSpinRange(QSpinBox *sp,
+                       const QString &key,
+                       const QMap<QString, double> &numMin,
+                       const QMap<QString, bool> &numMinEx,
+                       const QMap<QString, double> &numMax,
+                       const QMap<QString, bool> &numMaxEx)
+{
+    int lo = -1000000000;
+    int hi = 1000000000;
+    if (numMin.contains(key))
+    {
+        const double lim = numMin.value(key);
+        lo = numMinEx.value(key, false) ? static_cast<int>(lim) + 1 : static_cast<int>(lim);
+    }
+    if (numMax.contains(key))
+    {
+        const double lim = numMax.value(key);
+        hi = numMaxEx.value(key, false) ? static_cast<int>(lim) - 1 : static_cast<int>(lim);
+    }
+    if (lo > hi)
+        hi = lo;
+    sp->setRange(lo, hi);
+}
+
+void applyDoubleSpinRange(QDoubleSpinBox *dsp,
+                          const QString &key,
+                          const QMap<QString, double> &numMin,
+                          const QMap<QString, bool> &numMinEx,
+                          const QMap<QString, double> &numMax,
+                          const QMap<QString, bool> &numMaxEx)
+{
+    dsp->setRange(-1e9, 1e9);
+    if (numMin.contains(key))
+    {
+        const double lim = numMin.value(key);
+        if (numMinEx.value(key, false))
+            dsp->setMinimum(lim + 1e-9);
+        else
+            dsp->setMinimum(lim);
+    }
+    if (numMax.contains(key))
+    {
+        const double lim = numMax.value(key);
+        if (numMaxEx.value(key, false))
+            dsp->setMaximum(lim - 1e-9);
+        else
+            dsp->setMaximum(lim);
+    }
+}
+
 /// 甲方参数范围校验（编辑属性面板时即时提示）
 bool validateNodeParams(const QString &typeId, const QVariantMap &params, QString *errorOut)
 {
+    auto fail = [errorOut](const QString &msg) -> bool
+    {
+        if (errorOut)
+            *errorOut = msg;
+        return false;
+    };
+    auto positive = [&](const char *key, const QString &msg) -> bool
+    {
+        if (params.value(QString::fromUtf8(key)).toDouble() <= 0.0)
+            return fail(msg);
+        return true;
+    };
     if (typeId == QLatin1String("preprocess.depth_correct"))
     {
-        const double step = params.value(QStringLiteral("depth_step")).toDouble();
-        if (step <= 0.0)
-        {
-            if (errorOut)
-                *errorOut = QObject::tr("深度步长必须大于 0");
-            return false;
-        }
+        if (params.value(QStringLiteral("depth_step")).toDouble() <= 0.0)
+            return fail(QObject::tr("深度步长必须大于 0"));
     }
     else if (typeId == QLatin1String("preprocess.depth_time_correct"))
     {
         if (params.value(QStringLiteral("time_scale")).toDouble() <= 0.0)
-        {
-            if (errorOut)
-                *errorOut = QObject::tr("时间缩放系数必须大于 0");
-            return false;
-        }
+            return fail(QObject::tr("时间缩放系数必须大于 0"));
         if (params.contains(QStringLiteral("depth_scale"))
             && params.value(QStringLiteral("depth_scale")).toDouble() <= 0.0)
-        {
-            if (errorOut)
-                *errorOut = QObject::tr("深度缩放系数必须大于 0");
-            return false;
-        }
+            return fail(QObject::tr("深度缩放系数必须大于 0"));
     }
-    else if (typeId == QLatin1String("preprocess.data_crop"))
+    else if (typeId == QLatin1String("preprocess.data_merge"))
     {
-        const double depthMin = params.value(QStringLiteral("depth_min")).toDouble();
-        const double depthMax = params.value(QStringLiteral("depth_max")).toDouble();
-        const double timeMin = params.value(QStringLiteral("time_min")).toDouble();
-        const double timeMax = params.value(QStringLiteral("time_max")).toDouble();
-        if (depthMin >= depthMax)
-        {
-            if (errorOut)
-                *errorOut = QObject::tr("最小深度必须小于最大深度");
+        if (params.value(QStringLiteral("sample_points")).toInt() < 0)
+            return fail(QObject::tr("采样点数不能小于 0"));
+    }
+    else if (typeId == QLatin1String("preprocess.das_convert"))
+    {
+        if (!positive("fs", QObject::tr("采样率必须大于 0")))
             return false;
-        }
-        if (timeMin >= timeMax)
+        if (params.value(QStringLiteral("win_len")).toInt() < 1)
+            return fail(QObject::tr("窗口长度必须大于等于 1"));
+        const QString clip = params.value(QStringLiteral("clip_value")).toString().trimmed();
+        if (!clip.isEmpty())
         {
-            if (errorOut)
-                *errorOut = QObject::tr("最小时间必须小于最大时间");
-            return false;
+            bool ok = false;
+            const double v = clip.toDouble(&ok);
+            if (!ok || v < 0.0)
+                return fail(QObject::tr("幅值裁剪须为空或大于等于 0 的数值"));
         }
     }
+    else if (typeId == QLatin1String("preprocess.lfdas_extract"))
+    {
+        if (!positive("fs", QObject::tr("采样率必须大于 0")))
+            return false;
+        if (params.value(QStringLiteral("win_len")).toInt() < 1
+            || params.value(QStringLiteral("order")).toInt() < 1
+            || params.value(QStringLiteral("down_factor")).toInt() < 1)
+            return fail(QObject::tr("窗口长度、滤波器阶数、降采样系数均须 ≥ 1"));
+    }
+    else if (typeId == QLatin1String("preprocess.fk_analysis"))
+    {
+        if (!positive("fs", QObject::tr("采样率必须大于 0")))
+            return false;
+        if (!positive("dx", QObject::tr("深度/通道间距必须大于 0")))
+            return false;
+    }
+    else if (typeId == QLatin1String("preprocess.fft_extract"))
+    {
+        const double fs = params.value(QStringLiteral("fs")).toDouble();
+        if (fs <= 0.0)
+            return fail(QObject::tr("采样率必须大于 0"));
+        const double overlap = params.value(QStringLiteral("overlap")).toDouble();
+        if (overlap < 0.0 || overlap >= 1.0)
+            return fail(QObject::tr("窗口重叠率须满足 0 ≤ overlap < 1"));
+        if (params.value(QStringLiteral("win_len")).toInt() < 1)
+            return fail(QObject::tr("FFT 窗口长度须 ≥ 1"));
+    }
+    else if (typeId == QLatin1String("preprocess.bandpass_filter"))
+    {
+        if (!positive("fs", QObject::tr("采样率必须大于 0")))
+            return false;
+        if (params.value(QStringLiteral("order")).toInt() < 1)
+            return fail(QObject::tr("滤波器阶数须 ≥ 1"));
+    }
+    else if (typeId == QLatin1String("preprocess.downsample"))
+    {
+        const double fs = params.value(QStringLiteral("fs")).toDouble();
+        if (fs <= 0.0)
+            return fail(QObject::tr("采样率必须大于 0"));
+        if (params.value(QStringLiteral("factor")).toInt() < 2)
+            return fail(QObject::tr("降采样系数须 ≥ 2"));
+        const QString newFsText = params.value(QStringLiteral("new_fs")).toString().trimmed();
+        if (!newFsText.isEmpty())
+        {
+            bool ok = false;
+            const double newFs = newFsText.toDouble(&ok);
+            if (!ok || newFs <= 0.0 || newFs >= fs)
+                return fail(QObject::tr("目标采样率须为空或满足 0 < new_fs < fs"));
+        }
+    }
+    else if (typeId == QLatin1String("preprocess.fts_extract"))
+    {
+        const double fs = params.value(QStringLiteral("fs")).toDouble();
+        if (fs <= 0.0)
+            return fail(QObject::tr("采样率必须大于 0"));
+        const double overlap = params.value(QStringLiteral("overlap")).toDouble();
+        if (overlap < 0.0 || overlap >= 1.0)
+            return fail(QObject::tr("重叠率须满足 0 ≤ overlap < 1"));
+        if (params.value(QStringLiteral("win_len")).toInt() < 1)
+            return fail(QObject::tr("STFT 窗口长度须 ≥ 1"));
+    }
+    else if (typeId == QLatin1String("preprocess.mainfreq_split"))
+    {
+        if (!positive("fs", QObject::tr("采样率必须大于 0")))
+            return false;
+    }
+    else if (typeId == QLatin1String("preprocess.fbe_extract"))
+    {
+        if (!positive("fs", QObject::tr("采样率必须大于 0")))
+            return false;
+        if (params.value(QStringLiteral("win_len")).toInt() < 1)
+            return fail(QObject::tr("窗口长度须 ≥ 1"));
+        if (params.value(QStringLiteral("smooth_win")).toInt() < 0)
+            return fail(QObject::tr("平滑窗口须 ≥ 0"));
+    }
+    else if (typeId == QLatin1String("preprocess.moving_avg"))
+    {
+        if (params.value(QStringLiteral("win_len")).toInt() < 1)
+            return fail(QObject::tr("窗口长度须 ≥ 1"));
+    }
+    else if (typeId == QLatin1String("preprocess.slow_strain"))
+    {
+        if (!positive("fs", QObject::tr("采样率必须大于 0")))
+            return false;
+        if (!positive("cut_freq", QObject::tr("截止频率必须大于 0")))
+            return false;
+        if (params.value(QStringLiteral("poly_order")).toInt() < 1)
+            return fail(QObject::tr("多项式阶数须 ≥ 1"));
+    }
+    else if (typeId == QLatin1String("preprocess.dts_denoise"))
+    {
+        if (params.value(QStringLiteral("win_len")).toInt() < 1)
+            return fail(QObject::tr("窗口长度须 ≥ 1"));
+    }
+    else if (typeId == QLatin1String("preprocess.temp_correct"))
+    {
+        if (params.value(QStringLiteral("poly_order")).toInt() < 1)
+            return fail(QObject::tr("多项式阶数须 ≥ 1"));
+    }
+    else if (typeId == QLatin1String("preprocess.temp_diff"))
+    {
+        if (params.value(QStringLiteral("base_time")).toDouble() < 0.0)
+            return fail(QObject::tr("本底时间须 ≥ 0"));
+        const int ord = params.value(QStringLiteral("order")).toInt();
+        if (ord != 1 && ord != 2)
+            return fail(QObject::tr("差分阶数须为 1 或 2"));
+    }
+    else if (typeId == QLatin1String("preprocess.dtgs_gradient"))
+    {
+        if (params.value(QStringLiteral("depth_step")).toDouble() <= 0.0)
+            return fail(QObject::tr("深度步长必须大于 0"));
+        const int bo = params.value(QStringLiteral("boundary_order")).toInt();
+        if (bo < 1 || bo > 3)
+            return fail(QObject::tr("边界阶数须为 1、2 或 3"));
+    }
+    else if (typeId == QLatin1String("preprocess.baseline_build"))
+    {
+        if (params.value(QStringLiteral("poly_order")).toInt() < 1)
+            return fail(QObject::tr("多项式阶数须 ≥ 1"));
+    }
+    else if (typeId == QLatin1String("preprocess.strain_disturb"))
+    {
+        if (!positive("fs", QObject::tr("采样率必须大于 0")))
+            return false;
+        if (params.value(QStringLiteral("enhance")).toDouble() < 1.0)
+            return fail(QObject::tr("增强系数须 ≥ 1.0"));
+        if (!positive("hp_freq", QObject::tr("高通截止频率必须大于 0")))
+            return false;
+    }
+    else if (typeId == QLatin1String("preprocess.temp_coupling"))
+    {
+        if (params.value(QStringLiteral("poly_order")).toInt() < 1)
+            return fail(QObject::tr("多项式阶数须 ≥ 1"));
+    }
+
+    const QList<processing::ParamRangePairSpec> rangeSpecs =
+        processing::paramRangePairsForTypeId(typeId);
+    if (!rangeSpecs.isEmpty()
+        && !processing::validateParamRangePairs(params, rangeSpecs, errorOut))
+        return false;
+
     return true;
 }
 
@@ -219,15 +424,18 @@ void WorkflowEditorTab::setupUi()
     auto *scroll = new QScrollArea(right);
     scroll->setWidgetResizable(true);
     scroll->setFrameShape(QFrame::NoFrame);
+    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    scroll->setMinimumWidth(kPropertyPanelMinWidth);
     m_paramsPanel = new QWidget(scroll);
-    m_paramsPanel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
+    m_paramsPanel->setMinimumWidth(kPropertyPanelMinWidth);
+    m_paramsPanel->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     auto *panelVBox = new QVBoxLayout(m_paramsPanel);
     panelVBox->setContentsMargins(4, 4, 4, 4);
     panelVBox->setSpacing(8);
     m_paramsForm = new QFormLayout();
     m_paramsForm->setContentsMargins(0, 0, 0, 0);
     m_paramsForm->setSpacing(10);
-    m_paramsForm->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_paramsForm->setLabelAlignment(Qt::AlignJustify | Qt::AlignVCenter);
     m_paramsForm->setFormAlignment(Qt::AlignLeft | Qt::AlignTop);
     m_paramsForm->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
     m_paramsForm->setRowWrapPolicy(QFormLayout::DontWrapRows);
@@ -243,8 +451,9 @@ void WorkflowEditorTab::setupUi()
     m_splitter->setStretchFactor(0, 0);
     m_splitter->setStretchFactor(1, 1);
     m_splitter->setStretchFactor(2, 0);
-    right->setMinimumWidth(260);
-    m_splitter->setSizes({220, 800, 300});
+    right->setMinimumWidth(kPropertyPanelMinWidth);
+    m_splitter->setCollapsible(2, false);
+    m_splitter->setSizes({220, 800, 320});
 
     // ---- 底部日志面板（监听全局 LogBus）----
     // 日志面板暂时隐藏，只注释界面布局，后端日志实现仍保留
@@ -496,6 +705,8 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
     QMap<QString, QStringList> paramOptions;
     QMap<QString, double> paramFloatMin;
     QMap<QString, bool> paramFloatMinExclusive;
+    QMap<QString, double> paramFloatMax;
+    QMap<QString, bool> paramFloatMaxExclusive;
     QMap<QString, bool> paramRequired;
     QVariantMap displayParams = info.params;
     if (m_factory)
@@ -509,6 +720,8 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
                 paramOptions = meta.paramOptions;
                 paramFloatMin = meta.paramFloatMin;
                 paramFloatMinExclusive = meta.paramFloatMinExclusive;
+                paramFloatMax = meta.paramFloatMax;
+                paramFloatMaxExclusive = meta.paramFloatMaxExclusive;
                 paramRequired = meta.paramRequired;
                 paramsFictional = meta.clientParamsFictional;
                 hidePropertyPanel = meta.hidePropertyPanel;
@@ -563,6 +776,17 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
         return;
     }
 
+    const QList<processing::ParamRangePairSpec> rangeSpecs =
+        processing::paramRangePairsForTypeId(info.typeId);
+    if (!rangeSpecs.isEmpty())
+    {
+        const bool migrated = processing::migrateParamRangePairs(displayParams, rangeSpecs);
+        const QVariantMap beforeClamp = displayParams;
+        processing::clampParamRangePairs(displayParams, rangeSpecs);
+        if (migrated || beforeClamp != displayParams)
+            m_engine->setNodeParams(id, displayParams);
+    }
+
     QStringList keys;
     if (!paramOrder.isEmpty())
     {
@@ -607,8 +831,44 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
         m_engine->setNodeParams(id, p);
     };
 
+    QSet<QString> rangeSkipKeys;
+    for (const processing::ParamRangePairSpec &rs : rangeSpecs)
+    {
+        rangeSkipKeys.insert(rs.maxKey);
+        rangeSkipKeys.insert(rs.legacyKey);
+    }
+
+    auto fetchNodeParams = [this, id]()
+    {
+        QVariantMap p;
+        for (const auto &n : m_engine->nodes())
+            if (n.instanceId == id)
+            {
+                p = n.params;
+                break;
+            }
+        return p;
+    };
+
     for (const QString &key : keys)
     {
+        if (rangeSkipKeys.contains(key))
+            continue;
+
+        bool rangeRowAdded = false;
+        for (const processing::ParamRangePairSpec &rs : rangeSpecs)
+        {
+            if (key != rs.minKey)
+                continue;
+            auto applyMut = [applyParams](QVariantMap &p) { applyParams(p); };
+            processing::gui::addParamRangePairRow(m_paramsForm, m_paramsPanel, rs, fetchNodeParams,
+                                                  applyMut);
+            rangeRowAdded = true;
+            break;
+        }
+        if (rangeRowAdded)
+            continue;
+
         const QVariant v = displayParams.value(key);
         QWidget *editor = nullptr;
         const bool hasEnumOptions =
@@ -635,8 +895,22 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
         case QMetaType::UInt:
         {
             auto *sp = new QSpinBox(m_paramsPanel);
-            sp->setRange(-1000000000, 1000000000);
-            sp->setValue(v.toInt());
+            applyIntSpinRange(sp, key, paramFloatMin, paramFloatMinExclusive, paramFloatMax,
+                              paramFloatMaxExclusive);
+            const int val = qBound(sp->minimum(), v.toInt(), sp->maximum());
+            sp->setValue(val);
+            if (val != v.toInt())
+            {
+                QVariantMap p;
+                for (const auto &n : m_engine->nodes())
+                    if (n.instanceId == id)
+                    {
+                        p = n.params;
+                        break;
+                    }
+                p[key] = val;
+                applyParams(p);
+            }
             connect(sp, qOverload<int>(&QSpinBox::valueChanged), this, [this, id, key, applyParams](int x)
                     {
                     QVariantMap p;
@@ -690,17 +964,24 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
         case QMetaType::Float:
         {
             auto *dsp = new QDoubleSpinBox(m_paramsPanel);
-            dsp->setRange(-1e9, 1e9);
             dsp->setDecimals(6);
-            if (paramFloatMin.contains(key))
+            applyDoubleSpinRange(dsp, key, paramFloatMin, paramFloatMinExclusive, paramFloatMax,
+                                 paramFloatMaxExclusive);
+            const double val =
+                qBound(dsp->minimum(), v.toDouble(), dsp->maximum());
+            dsp->setValue(val);
+            if (qAbs(val - v.toDouble()) > 1e-6)
             {
-                const double lim = paramFloatMin.value(key);
-                if (paramFloatMinExclusive.value(key, false))
-                    dsp->setRange(lim + 1e-9, 1e12);
-                else
-                    dsp->setMinimum(lim);
+                QVariantMap p;
+                for (const auto &n : m_engine->nodes())
+                    if (n.instanceId == id)
+                    {
+                        p = n.params;
+                        break;
+                    }
+                p[key] = val;
+                applyParams(p);
             }
-            dsp->setValue(v.toDouble());
             connect(dsp, qOverload<double>(&QDoubleSpinBox::valueChanged), this,
                     [this, id, key, applyParams](double x)
                     {
@@ -812,7 +1093,7 @@ void WorkflowEditorTab::rebuildParamForm(const QString &nodeId)
         QString labelText = paramLabels.value(key, key);
         if (paramRequired.value(key, false))
             labelText += QStringLiteral(" *");
-        m_paramsForm->addRow(labelText, editor);
+        m_paramsForm->addRow(makeParamFormLabel(labelText, m_paramsPanel), editor);
     }
 }
 
@@ -835,12 +1116,12 @@ void WorkflowEditorTab::rebuildDataInputParamForm(const QString &nodeId,
     inputVBox->addWidget(btnPick);
     inputVBox->addWidget(fileList);
 
-    m_paramsForm->addRow(tr("输入文件"), inputField);
+    m_paramsForm->addRow(makeParamFormLabel(tr("输入文件"), m_paramsPanel), inputField);
 
     const QString fmt = displayParams.value(QStringLiteral("file_format"), QStringLiteral("LAS")).toString();
     auto *fmtLabel = new QLabel(fmt, m_paramsPanel);
     fmtLabel->setStyleSheet(QStringLiteral("color:#546E7A;"));
-    m_paramsForm->addRow(tr("文件格式"), fmtLabel);
+    m_paramsForm->addRow(makeParamFormLabel(tr("文件格式"), m_paramsPanel), fmtLabel);
 
     connect(btnPick, &QPushButton::clicked, this,
             [this, nodeId, fileList]()
@@ -899,7 +1180,7 @@ void WorkflowEditorTab::rebuildFormatConvertParamForm(const QString &nodeId,
     {
         inFileList->setPlainText(pathListToDisplayText(upstreamFiles));
     }
-    m_paramsForm->addRow(tr("上游输入文件"), inFileList);
+    m_paramsForm->addRow(makeParamFormLabel(tr("上游输入文件"), m_paramsPanel), inFileList);
 
     auto *comboOut = new QComboBox(m_paramsPanel);
     comboOut->addItem(QStringLiteral("H5"));
@@ -962,8 +1243,8 @@ void WorkflowEditorTab::rebuildFormatConvertParamForm(const QString &nodeId,
     connect(btnExport, &QPushButton::clicked, this, [this, nodeId]()
             { onExportFormatConvert(nodeId); });
 
-    m_paramsForm->addRow(tr("输出格式"), comboOut);
-    m_paramsForm->addRow(tr("输出目录"), dirRow);
+    m_paramsForm->addRow(makeParamFormLabel(tr("输出格式"), m_paramsPanel), comboOut);
+    m_paramsForm->addRow(makeParamFormLabel(tr("输出目录"), m_paramsPanel), dirRow);
 
     auto *exportWrap = new QWidget(m_paramsPanel);
     auto *exportHBox = new QHBoxLayout(exportWrap);

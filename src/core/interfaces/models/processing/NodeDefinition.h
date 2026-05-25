@@ -51,6 +51,10 @@ namespace processing
         QMap<QString, double> paramFloatMin;
         QMap<QString, bool> paramFloatMinExclusive;
 
+        // 数值参数上限（int/float 共用）；配合 maxExclusive 表示必须严格小于该值
+        QMap<QString, double> paramFloatMax;
+        QMap<QString, bool> paramFloatMaxExclusive;
+
         // 甲方标记的必选参数（属性面板标签加 *）
         QMap<QString, bool> paramRequired;
 
