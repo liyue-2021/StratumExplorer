@@ -540,8 +540,7 @@ void WorkflowScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *e)
                         {
                             reason = tr("目标节点 %1 没有输入端口").arg(tm->displayName);
                         }
-                        else if (fromMeta && tm
-                                 && !isAlgorithmEdgeCompatible(*fromMeta, *tm, &reason))
+                        else if (fm && tm && !isAlgorithmEdgeCompatible(*fm, *tm, &reason))
                         {
                             /* reason 已由兼容性模块填写 */
                         }
