@@ -119,6 +119,66 @@ QString WorkflowScene::pickFirstFreeInputPort(const QString &nodeId,
     return {};
 }
 
+/// 根据两端节点尝试生成合法连线（端口 + 算法兼容），成功则写入 edge
+static bool tryResolveEdge(processing::IWorkflowEngine *engine,
+                           processing::INodeFactory *factory,
+                           const QString &fromId,
+                           const QString &fromTypeId,
+                           const QString &toId,
+                           const QString &toTypeId,
+                           EdgeInstance *outEdge)
+{
+    if (!engine || !outEdge)
+        return false;
+
+    const NodeMeta *fm = nullptr;
+    const NodeMeta *tm = nullptr;
+    static thread_local NodeMeta fromMeta;
+    static thread_local NodeMeta toMeta;
+    if (factory)
+    {
+        for (const auto &m : factory->listAll())
+        {
+            if (m.typeId == fromTypeId)
+                fromMeta = m, fm = &fromMeta;
+            if (m.typeId == toTypeId)
+                toMeta = m, tm = &toMeta;
+        }
+    }
+    if (!fm || !tm || fm->outputs.isEmpty() || tm->inputs.isEmpty())
+        return false;
+
+    const QString fromPort = fm->outputs.first().key;
+    DataFormat outFmt = DataFormat::Unknown;
+    for (const auto &p : fm->outputs)
+        if (p.key == fromPort)
+        {
+            outFmt = p.format;
+            break;
+        }
+
+    QSet<QString> usedIn;
+    for (const auto &e : engine->edges())
+        if (e.toNode == toId)
+            usedIn.insert(e.toPort);
+
+    QString toPort;
+    for (const auto &p : tm->inputs)
+    {
+        if (usedIn.contains(p.key) || !isCompatible(outFmt, p.format))
+            continue;
+        if (!isAlgorithmEdgeCompatible(*fm, *tm))
+            continue;
+        toPort = p.key;
+        break;
+    }
+    if (toPort.isEmpty())
+        return false;
+
+    *outEdge = EdgeInstance{fromId, fromPort, toId, toPort};
+    return true;
+}
+
 // ----------------------------------------------------- 引擎信号 → 视图
 
 void WorkflowScene::onNodeAdded(const NodeInstance &n)
@@ -154,8 +214,12 @@ void WorkflowScene::onNodeRemoved(const QString &id)
     if (auto *item = m_nodeItems.take(id))
     {
         if (m_pendingFrom == item)
-        {
             m_pendingFrom = nullptr;
+        if (m_pendingTo == item)
+            m_pendingTo = nullptr;
+        if (!m_pendingFrom && !m_pendingTo)
+        {
+            m_connectDrag = ConnectDragMode::None;
             if (m_previewLine)
             {
                 removeItem(m_previewLine);
@@ -382,11 +446,31 @@ void WorkflowScene::mousePressEvent(QGraphicsSceneMouseEvent *e)
         if (auto *n = nodeItemAt(e->scenePos()))
         {
             const QPointF local = n->mapFromScene(e->scenePos());
-            bool hit = false;
-            (void)n->hitOutputSide(local, &hit);
-            if (hit)
+            bool hitOut = false;
+            bool hitIn = false;
+            (void)n->hitOutputSide(local, &hitOut);
+            (void)n->hitInputSide(local, &hitIn);
+
+            const NodeMeta *meta = metaOf(n->typeId());
+            const bool hasIn = meta && !meta->inputs.isEmpty();
+
+            // 优先：从绿色输出口拖出（数据输入 → 下游）
+            if (hitOut)
             {
+                m_connectDrag = ConnectDragMode::FromOutput;
                 m_pendingFrom = n;
+                m_pendingTo = nullptr;
+            }
+            // 其次：从黄色输入口反向拖向数据源（格式转换 ← 数据输入）
+            else if (hitIn && hasIn)
+            {
+                m_connectDrag = ConnectDragMode::TowardInput;
+                m_pendingTo = n;
+                m_pendingFrom = nullptr;
+            }
+
+            if (m_connectDrag != ConnectDragMode::None)
+            {
                 m_previewLine = new QGraphicsLineItem(
                     QLineF(e->scenePos(), e->scenePos()));
                 QPen pen(QColor("#1976D2"), 2, Qt::DashLine);
@@ -418,10 +502,17 @@ void WorkflowScene::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *e)
 
 void WorkflowScene::mouseMoveEvent(QGraphicsSceneMouseEvent *e)
 {
-    if (m_previewLine && m_pendingFrom)
+    if (!m_previewLine)
     {
-        // 预览线起点用源节点离当前光标更近的输出锚（自动适应方向）
-        const QPointF cur = e->scenePos();
+        QGraphicsScene::mouseMoveEvent(e);
+        return;
+    }
+
+    const QPointF cur = e->scenePos();
+    QPointF start = cur;
+
+    if (m_connectDrag == ConnectDragMode::FromOutput && m_pendingFrom)
+    {
         const QPointF aR = m_pendingFrom->anchorScene(NodeItem::Side::Right);
         const QPointF aB = m_pendingFrom->anchorScene(NodeItem::Side::Bottom);
         auto d2 = [&](const QPointF &a)
@@ -429,142 +520,128 @@ void WorkflowScene::mouseMoveEvent(QGraphicsSceneMouseEvent *e)
             const qreal dx = a.x() - cur.x(), dy = a.y() - cur.y();
             return dx * dx + dy * dy;
         };
-        const QPointF start = (d2(aR) <= d2(aB) || m_pendingFrom->kind() == NodeKind::PureInput)
-                                  ? aR
-                                  : aB;
-        m_previewLine->setLine(QLineF(start, cur));
-        e->accept();
-        return;
+        start = (d2(aR) <= d2(aB) || m_pendingFrom->kind() == NodeKind::PureInput) ? aR : aB;
     }
-    QGraphicsScene::mouseMoveEvent(e);
+    else if (m_connectDrag == ConnectDragMode::TowardInput && m_pendingTo)
+    {
+        start = m_pendingTo->anchorScene(NodeItem::Side::Left);
+    }
+
+    m_previewLine->setLine(QLineF(start, cur));
+    e->accept();
 }
 
 void WorkflowScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *e)
 {
-    if (m_previewLine && m_pendingFrom)
+    if (!m_previewLine || m_connectDrag == ConnectDragMode::None)
     {
-        if (m_previewLine)
-        {
-            removeItem(m_previewLine);
-            delete m_previewLine;
-            m_previewLine = nullptr;
-        }
-        NodeItem *from = m_pendingFrom;
-        m_pendingFrom = nullptr;
+        QGraphicsScene::mouseReleaseEvent(e);
+        return;
+    }
 
-        if (auto *target = nodeItemAt(e->scenePos()))
-        {
-            if (target != from && m_engine)
-            {
-                const QPointF local = target->mapFromScene(e->scenePos());
-                bool hit = false;
-                (void)target->hitInputSide(local, &hit);
-                // 也支持落到节点卡片内任意位置（视为命中输入端口，便于使用）
-                if (!hit)
-                    hit = true;
+    removeItem(m_previewLine);
+    delete m_previewLine;
+    m_previewLine = nullptr;
 
-                if (hit)
-                {
-                    const QString fromPort = pickFirstFreeOutputPort(
-                        from->instanceId(), from->typeId());
+    const ConnectDragMode mode = m_connectDrag;
+    NodeItem *fromItem = m_pendingFrom;
+    NodeItem *toItem = m_pendingTo;
+    m_connectDrag = ConnectDragMode::None;
+    m_pendingFrom = nullptr;
+    m_pendingTo = nullptr;
 
-                    DataFormat outFmt = DataFormat::Unknown;
-                    if (const NodeMeta *fm = metaOf(from->typeId()))
-                    {
-                        for (const auto &p : fm->outputs)
-                            if (p.key == fromPort)
-                            {
-                                outFmt = p.format;
-                                break;
-                            }
-                    }
-                    QString toPort = pickFirstFreeInputPort(
-                        target->instanceId(), target->typeId(), from->typeId(), outFmt);
-
-                    // 目标节点所有 input 端口都被占用 → 弹菜单允许"替换某条已有连线"
-                    if (!fromPort.isEmpty() && toPort.isEmpty())
-                    {
-                        const NodeMeta *tm = metaOf(target->typeId());
-                        if (tm && !tm->inputs.isEmpty())
-                        {
-                            // 收集占用了目标 input 端口的现有边
-                            QList<EdgeInstance> occupying;
-                            for (const auto &ed : m_engine->edges())
-                                if (ed.toNode == target->instanceId())
-                                    occupying.append(ed);
-
-                            if (!occupying.isEmpty())
-                            {
-                                QMenu replaceMenu;
-                                replaceMenu.addAction(tr("替换已有连线："))->setEnabled(false);
-                                replaceMenu.addSeparator();
-                                QHash<QAction *, EdgeInstance> map;
-                                for (const auto &ed : occupying)
-                                {
-                                    // 用源节点显示名 + 端口名做标签
-                                    QString srcName = ed.fromNode;
-                                    for (const auto &nn : m_engine->nodes())
-                                        if (nn.instanceId == ed.fromNode)
-                                        {
-                                            srcName = nn.displayName;
-                                            break;
-                                        }
-                                    auto *a = replaceMenu.addAction(
-                                        tr("用本连线替换  [%1] → 端口 %2")
-                                            .arg(srcName, ed.toPort));
-                                    map.insert(a, ed);
-                                }
-                                replaceMenu.addSeparator();
-                                QAction *aCancel = replaceMenu.addAction(tr("取消"));
-                                QAction *sel = replaceMenu.exec(e->screenPos());
-                                if (sel && sel != aCancel && map.contains(sel))
-                                {
-                                    const EdgeInstance victim = map.value(sel);
-                                    toPort = victim.toPort;
-                                    m_engine->removeEdge(victim);
-                                }
-                            }
-                        }
-                    }
-
-                    if (fromPort.isEmpty() || toPort.isEmpty())
-                    {
-                        QString reason;
-                        const NodeMeta *tm = metaOf(target->typeId());
-                        const NodeMeta *fm = metaOf(from->typeId());
-                        if (fromPort.isEmpty())
-                        {
-                            reason = tr("源节点 %1 没有可用的输出端口").arg(fm ? fm->displayName : from->typeId());
-                        }
-                        else if (tm && tm->inputs.isEmpty())
-                        {
-                            reason = tr("目标节点 %1 没有输入端口").arg(tm->displayName);
-                        }
-                        else if (fm && tm && !isAlgorithmEdgeCompatible(*fm, *tm, &reason))
-                        {
-                            /* reason 已由兼容性模块填写 */
-                        }
-                        else
-                        {
-                            reason = tr("目标节点没有可连接的输入端口（可能已被占用或算法不兼容）");
-                        }
-                        EdgeInstance dummy{from->instanceId(), QString(),
-                                           target->instanceId(), QString()};
-                        emit m_engine->edgeRejected(dummy, reason);
-                    }
-                    else
-                    {
-                        EdgeInstance edge{from->instanceId(), fromPort,
-                                          target->instanceId(), toPort};
-                        m_engine->addEdge(edge);
-                    }
-                }
-            }
-        }
+    if (!m_engine)
+    {
         e->accept();
         return;
     }
-    QGraphicsScene::mouseReleaseEvent(e);
+
+    auto *drop = nodeItemAt(e->scenePos());
+    if (!drop)
+    {
+        e->accept();
+        return;
+    }
+
+    QString srcId;
+    QString srcType;
+    QString dstId;
+    QString dstType;
+
+    if (mode == ConnectDragMode::FromOutput && fromItem)
+    {
+        if (drop == fromItem)
+        {
+            e->accept();
+            return;
+        }
+        srcId = fromItem->instanceId();
+        srcType = fromItem->typeId();
+        dstId = drop->instanceId();
+        dstType = drop->typeId();
+    }
+    else if (mode == ConnectDragMode::TowardInput && toItem)
+    {
+        if (drop == toItem)
+        {
+            e->accept();
+            return;
+        }
+        // 反向拖拽：松手处的节点为上游（源），按下时为下游（目标）
+        srcId = drop->instanceId();
+        srcType = drop->typeId();
+        dstId = toItem->instanceId();
+        dstType = toItem->typeId();
+    }
+    else
+    {
+        e->accept();
+        return;
+    }
+
+    EdgeInstance edge;
+    if (tryResolveEdge(m_engine, m_factory, srcId, srcType, dstId, dstType, &edge))
+    {
+        m_engine->addEdge(edge);
+        e->accept();
+        return;
+    }
+
+    // 常规方向失败时，若误拖到「数据输入」等无输入口节点，尝试自动反转方向
+    if (mode == ConnectDragMode::FromOutput && fromItem && drop)
+    {
+        const NodeMeta *tm = metaOf(drop->typeId());
+        if (tm && tm->inputs.isEmpty())
+        {
+            EdgeInstance reversed;
+            if (tryResolveEdge(m_engine, m_factory, drop->instanceId(), drop->typeId(),
+                               fromItem->instanceId(), fromItem->typeId(), &reversed))
+            {
+                m_engine->addEdge(reversed);
+                e->accept();
+                return;
+            }
+        }
+    }
+
+    QString reason;
+    const NodeMeta *tm = metaOf(dstType);
+    const NodeMeta *fm = metaOf(srcType);
+    if (!fm || fm->outputs.isEmpty())
+        reason = tr("源节点 %1 没有输出端口").arg(fm ? fm->displayName : srcType);
+    else if (!tm || tm->inputs.isEmpty())
+        reason =
+            tr("「%1」是数据源，没有输入口。请从它的绿色输出口拖到「数据格式转换」；"
+               "或从格式转换左侧黄色输入口反向拖到数据输入。")
+                .arg(tm ? tm->displayName : dstType);
+    else if (fm && tm)
+        isAlgorithmEdgeCompatible(*fm, *tm, &reason);
+    else
+        reason = tr("无法建立连线（端口占用或格式/算法不兼容）");
+
+    EdgeInstance dummy{srcId, QString(), dstId, QString()};
+    emit m_engine->edgeRejected(dummy, reason);
+    e->accept();
 }
 
 // ----------------------------------------------------- 节点右键菜单

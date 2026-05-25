@@ -112,9 +112,18 @@ namespace processing
             bool m_hasAlignmentX = false;
             bool m_hasAlignmentY = false;
 
-            // 拖拽连线临时状态：NodeItem 现在是 QGraphicsObject，可用 QPointer 弱引用，
-            // 节点在拖动过程中被外部删除也不会变野指针。
+            // 拖拽连线临时状态（QPointer 避免节点删除后野指针）
+            // FromOutput：从源节点绿色输出口拖出（常规）
+            // TowardInput：从目标节点黄色输入口反向寻找上游（便于接「数据输入→格式转换」）
+            enum class ConnectDragMode
+            {
+                None,
+                FromOutput,
+                TowardInput,
+            };
+            ConnectDragMode m_connectDrag = ConnectDragMode::None;
             QPointer<NodeItem> m_pendingFrom;
+            QPointer<NodeItem> m_pendingTo;
             QGraphicsLineItem *m_previewLine = nullptr;
         };
 
