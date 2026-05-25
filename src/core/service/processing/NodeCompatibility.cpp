@@ -156,21 +156,24 @@ bool checkDataInputEdge(const NodeMeta &up, const NodeMeta &down, QString *reaso
     return fail(reason, QObject::tr("数据输入节点只能连接到「数据格式转换」"));
 }
 
-/// 格式转换：输出作为预处理入口，只能接 23 表中的 A 类时域节点
+/// 格式转换节点：作为下游可接数据输入；作为上游只能接 DAS/DTS/DSS 的 A 类时域
 bool checkFormatConvertEdge(const NodeCompatProfile &pu, const NodeCompatProfile &pd,
-                            const NodeMeta &down, QString *reason)
+                            const NodeMeta &up, const NodeMeta &down, QString *reason)
 {
-    Q_UNUSED(pu);
-    if (down.typeId != QLatin1String("preprocess.format_convert"))
+    // 连线目标是「格式转换」：允许数据输入等上游接入（白名单见 checkDataInputEdge）
+    if (down.typeId == QLatin1String("preprocess.format_convert"))
         return true;
 
-    if (pd.group != NodeGroup::Preprocess || pd.tier != DataTier::A_TimeDomain
-        || pd.family == SensorFamily::Neutral)
-    {
-        return fail(reason,
-                    QObject::tr("格式转换之后请接 DAS/DTS/DSS 的时域预处理节点（A 类）"));
-    }
-    return true;
+    // 连线的源是「格式转换」：下游必须是 23 表中的 A 类时域预处理
+    if (up.typeId != QLatin1String("preprocess.format_convert"))
+        return true;
+
+    if (pd.group == NodeGroup::Preprocess && pd.tier == DataTier::A_TimeDomain
+        && pd.family != SensorFamily::Neutral)
+        return true;
+
+    return fail(reason,
+                QObject::tr("格式转换之后请接 DAS/DTS/DSS 的时域预处理节点（A 类）"));
 }
 
 /// 解释/展示类：单独规则，不要求 DAS/DTS/DSS 族一致
@@ -407,7 +410,7 @@ bool isAlgorithmEdgeCompatible(const NodeMeta &upstream, const NodeMeta &downstr
     if (!checkDataInputEdge(upstream, downstream, reason))
         return false;
 
-    if (!checkFormatConvertEdge(pu, pd, downstream, reason))
+    if (!checkFormatConvertEdge(pu, pd, upstream, downstream, reason))
         return false;
 
     if (!checkCouplingEdge(pu, pd, upstream, downstream, reason))
