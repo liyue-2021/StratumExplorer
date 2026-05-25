@@ -79,6 +79,9 @@ bool isAlgorithmEdgeCompatible(const NodeMeta &upstream,
  * @param typeIdOfNode 由 instanceId 查 typeId
  * @param metaOfType 由 typeId 查 NodeMeta
  */
+/// 画布临时标注：甲方文档序号 + 数据族/形态（测试用，funcId 与 ProductionNodes 一致）
+QString nodeTestSeqLabel(const QString &typeId, int funcId);
+
 bool validateWorkflowCompatGraph(
     const QList<EdgeInstance> &edges,
     const std::function<QString(const QString &instanceId)> &typeIdOfNode,

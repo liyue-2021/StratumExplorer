@@ -61,6 +61,8 @@ namespace processing
             void setStatus(processing::NodeStatus s);
             // 更新节点标题（用于重命名操作）
             void setTitle(const QString &title);
+            /// 临时测试角标：甲方文档序号（如「8·DAS·B」），正式版可关闭
+            void setTestSeqLabel(const QString &label);
             // 设置节点卡片的宽高（序列化还原时由 WorkflowScene 调用，范围有限制）
             void setSize(qreal w, qreal h);
             // 获取当前节点卡片尺寸
@@ -104,6 +106,7 @@ namespace processing
             QString m_id;
             QString m_title;
             QString m_typeId;
+            QString m_testSeqLabel; ///< 画布角标，空则不绘制
             processing::NodeGroup m_group;
             processing::NodeKind m_kind;
             processing::NodeStatus m_status = processing::NodeStatus::Idle;

@@ -186,6 +186,7 @@ void WorkflowScene::onNodeAdded(const NodeInstance &n)
     // 从节点工厂里查询该节点类型的元数据（分组、节点类型、端口定义等）
     NodeGroup g = NodeGroup::Preprocess;
     NodeKind k = NodeKind::InOut;
+    int funcId = -1;
     if (m_factory)
     {
         for (const auto &m : m_factory->listAll())
@@ -193,11 +194,13 @@ void WorkflowScene::onNodeAdded(const NodeInstance &n)
             {
                 g = m.group;
                 k = m.kind;
+                funcId = m.funcId;
                 break;
             }
     }
     // 创建新的节点视图对象并加入画布
     auto *item = new NodeItem(n, g, k);
+    item->setTestSeqLabel(nodeTestSeqLabel(n.typeId, funcId));
     item->setPos(n.position);
     // 如果节点有历史尺寸数据则还原，否则使用默认尺寸
     if (n.size.isValid() && n.size.width() > 0 && n.size.height() > 0)

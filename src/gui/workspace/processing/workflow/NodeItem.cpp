@@ -43,10 +43,25 @@ void NodeItem::setStatus(NodeStatus s)
     update();
 }
 
+void NodeItem::setTestSeqLabel(const QString &label)
+{
+    m_testSeqLabel = label.trimmed();
+    setToolTip(QStringLiteral("%1\n序号: %2\n类型: %3")
+                   .arg(m_title,
+                        m_testSeqLabel.isEmpty() ? QStringLiteral("—") : m_testSeqLabel,
+                        m_typeId));
+    prepareGeometryChange();
+    recomputeSize();
+    update();
+}
+
 void NodeItem::setTitle(const QString &title)
 {
     m_title = title;
-    setToolTip(QStringLiteral("%1\n类型: %2").arg(m_title, m_typeId));
+    setToolTip(QStringLiteral("%1\n序号: %2\n类型: %3")
+                   .arg(m_title,
+                        m_testSeqLabel.isEmpty() ? QStringLiteral("—") : m_testSeqLabel,
+                        m_typeId));
     prepareGeometryChange();
     recomputeSize();
     update();
@@ -213,11 +228,12 @@ void NodeItem::recomputeSize()
 
     QFontMetricsF fmT(fTitle), fmS(fSub);
     qreal wTitle = fmT.horizontalAdvance(m_title) + kPad * 2 + kBtnSize * 2 + 8;
+    qreal wSeq = m_testSeqLabel.isEmpty() ? 0.0 : fmS.horizontalAdvance(m_testSeqLabel) + 24.0;
     qreal wType = fmS.horizontalAdvance(m_typeId) + kPad * 2;
     qreal wStat = fmS.horizontalAdvance(toString(m_status)) + kPad * 2;
 
     // 声明下限宽度，树立一个拖布的基準线、并对上限有有效控制
-    m_minWidth = qBound(kMinW, qMax(wTitle, qMax(wType, wStat)), kMaxW);
+    m_minWidth = qBound(kMinW, qMax(wTitle, qMax(wSeq, qMax(wType, wStat))), kMaxW);
     m_minHeight = kMinH;
     // 如果当前宽/高不足，扩转为下限；否则保留用户拖拽的尺寸
     if (m_width < m_minWidth)
@@ -267,10 +283,33 @@ void NodeItem::paint(QPainter *p, const QStyleOptionGraphicsItem *opt, QWidget *
     QFontMetricsF fmT(fTitle);
     QString elidedTitle = fmT.elidedText(
         m_title, Qt::ElideRight, m_width - kPad * 2 - kBtnSize * 2 - 8);
-    p->drawText(QRectF(kPad, 2, m_width - kPad * 2 - kBtnSize * 2 - 8, 20),
+    const qreal btnLeft = m_width - kPad - kBtnSize * 2 - 4;
+    qreal seqRight = btnLeft - 4;
+    if (!m_testSeqLabel.isEmpty())
+    {
+        QFont fSeq;
+        fSeq.setBold(true);
+        fSeq.setPointSize(8);
+        p->setFont(fSeq);
+        QFontMetricsF fmSeq(fSeq);
+        const qreal seqW = fmSeq.horizontalAdvance(m_testSeqLabel) + 10.0;
+        seqRight = btnLeft - seqW - 4.0;
+        const QRectF seqRect(seqRight, 4, seqW, 16);
+        p->setPen(QPen(QColor("#E65100"), 1));
+        p->setBrush(QColor("#FFF3E0"));
+        p->drawRoundedRect(seqRect, 4, 4);
+        p->setPen(QColor("#E65100"));
+        p->drawText(seqRect, Qt::AlignCenter, m_testSeqLabel);
+        fTitle.setBold(true);
+        fTitle.setPointSize(10);
+        p->setFont(fTitle);
+        p->setPen(QColor("#212121"));
+    }
+
+    p->drawText(QRectF(kPad, 2, qMax(40.0, seqRight - kPad), 20),
                 Qt::AlignLeft | Qt::AlignVCenter, elidedTitle);
 
-    QRectF btnRun(m_width - kPad - kBtnSize * 2 - 4, 3, kBtnSize, kBtnSize);
+    QRectF btnRun(btnLeft, 3, kBtnSize, kBtnSize);
     QRectF btnStop(m_width - kPad - kBtnSize, 3, kBtnSize, kBtnSize);
     p->setBrush(Qt::white);
     p->setPen(QPen(QColor("#607D8B"), 0.8));

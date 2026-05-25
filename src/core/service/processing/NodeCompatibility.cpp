@@ -340,6 +340,57 @@ QString toString(SensorFamily f)
     }
 }
 
+/// 形态缩写（显示在节点角标）
+static QString tierAbbr(DataTier t)
+{
+    switch (t)
+    {
+    case DataTier::A_TimeDomain:
+        return QStringLiteral("A");
+    case DataTier::B_Spectrum:
+        return QStringLiteral("B");
+    case DataTier::C_Feature:
+        return QStringLiteral("C");
+    case DataTier::Coupling:
+        return QStringLiteral("耦");
+    case DataTier::None:
+    default:
+        return QStringLiteral("-");
+    }
+}
+
+QString nodeTestSeqLabel(const QString &typeId, int funcId)
+{
+    if (typeId == QLatin1String("input.data_input"))
+        return QObject::tr("入·数据源");
+
+    if (typeId == QLatin1String("preprocess.format_convert"))
+        return QObject::tr("0·格式转换");
+
+    if (funcId >= 1 && funcId <= 23)
+    {
+        const NodeCompatProfile p = compatProfileForTypeId(typeId);
+        return QObject::tr("%1·%2·%3")
+            .arg(funcId)
+            .arg(toString(p.family))
+            .arg(tierAbbr(p.tier));
+    }
+
+    if (funcId >= 25 && funcId <= 36)
+        return QObject::tr("解%1").arg(funcId);
+
+    if (funcId >= 37 && funcId <= 41)
+        return QObject::tr("展%1").arg(funcId);
+
+    if (funcId == 24)
+        return QObject::tr("24·物理量");
+
+    if (funcId >= 0)
+        return QObject::tr("#%1").arg(funcId);
+
+    return QString();
+}
+
 QString toString(DataTier t)
 {
     switch (t)
