@@ -3,12 +3,47 @@
 
 #include "service/processing/INodeFactory.h"
 #include "processing/NodeDefinition.h"
+#include "NodeCompatibility.h"
 
 #include <QHash>
 #include <QMimeData>
 #include <algorithm>
 
 using namespace processing;
+using namespace processing::gui;
+
+namespace
+{
+enum PaletteRoles
+{
+    RoleTypeId = Qt::UserRole,
+    RoleDisplayName = Qt::UserRole + 1,
+    RoleSeqLabel = Qt::UserRole + 2,
+    RoleDescription = Qt::UserRole + 3,
+};
+
+void updatePaletteItemText(QTreeWidgetItem *item, bool showSeq)
+{
+    if (!item || item->data(0, RoleTypeId).toString().isEmpty())
+        return;
+    const QString base = item->data(0, RoleDisplayName).toString();
+    const QString seq = item->data(0, RoleSeqLabel).toString();
+    const QString desc = item->data(0, RoleDescription).toString();
+    if (showSeq && !seq.isEmpty())
+        item->setText(0, QStringLiteral("%1  %2").arg(seq, base));
+    else
+        item->setText(0, base);
+
+    if (!seq.isEmpty())
+    {
+        item->setToolTip(0, desc.isEmpty() ? QStringLiteral("序号: %1").arg(seq)
+                                           : QStringLiteral("%1\n序号: %2").arg(desc, seq));
+    }
+    else
+        item->setToolTip(0, desc);
+}
+} // namespace
+
 using namespace processing::gui;
 
 NodePalette::NodePalette(INodeFactory *factory, QWidget *parent)
@@ -27,7 +62,7 @@ NodePalette::NodePalette(INodeFactory *factory, QWidget *parent)
     connect(this, &QTreeWidget::itemDoubleClicked, this,
             [this](QTreeWidgetItem *item, int)
             {
-                const QString typeId = item->data(0, Qt::UserRole).toString();
+    const QString typeId = item->data(0, RoleTypeId).toString();
                 if (!typeId.isEmpty())
                     emit nodeTypeActivated(typeId);
             });
@@ -69,12 +104,38 @@ void NodePalette::refresh()
     {
         auto *gi = getGroup(m.group);
         auto *it = new QTreeWidgetItem(gi);
-        it->setText(0, m.displayName);
-        it->setToolTip(0, m.description);
-        it->setData(0, Qt::UserRole, m.typeId);
+        const QString seq = nodeTestSeqLabel(m.typeId, m.funcId);
+        it->setData(0, RoleTypeId, m.typeId);
+        it->setData(0, RoleDisplayName, m.displayName);
+        it->setData(0, RoleSeqLabel, seq);
+        it->setData(0, RoleDescription, m.description);
+        updatePaletteItemText(it, m_testSeqBadgeVisible);
         // 只允许拖动叶子节点（节点类型），分组节点不可拖
         it->setFlags((it->flags() | Qt::ItemIsDragEnabled) & ~Qt::ItemIsDropEnabled);
     }
+}
+
+void NodePalette::setTestSeqBadgeVisible(bool visible)
+{
+    if (m_testSeqBadgeVisible == visible)
+        return;
+    m_testSeqBadgeVisible = visible;
+    applySeqLabelsToItems();
+}
+
+void NodePalette::applySeqLabelsToItems()
+{
+    const auto walk = [this](const auto &self, QTreeWidgetItem *item) -> void
+    {
+        if (!item)
+            return;
+        if (!item->data(0, RoleTypeId).toString().isEmpty())
+            updatePaletteItemText(item, m_testSeqBadgeVisible);
+        for (int i = 0; i < item->childCount(); ++i)
+            self(self, item->child(i));
+    };
+    for (int i = 0; i < topLevelItemCount(); ++i)
+        walk(walk, topLevelItem(i));
 }
 
 QStringList NodePalette::mimeTypes() const
@@ -87,7 +148,7 @@ QMimeData *NodePalette::mimeData(const QList<QTreeWidgetItem *> &items) const
     if (items.isEmpty())
         return nullptr;
     auto *it = items.first();
-    const QString typeId = it->data(0, Qt::UserRole).toString();
+    const QString typeId = it->data(0, RoleTypeId).toString();
     if (typeId.isEmpty())
         return nullptr;
     auto *md = new QMimeData;

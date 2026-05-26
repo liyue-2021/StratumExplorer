@@ -74,7 +74,7 @@
     "order": ["fs", "transform_mode", "norm_min", "norm_max", "win_len", "clip_value"],
     "params": {
       "fs": { "type": "float", "label": "采样率", "default": 1000.0, "minExclusive": 0, "required": true },
-      "transform_mode": { "type": "string", "label": "转换模式", "default": "rms", "options": ["rms", "abs", "log", "phase"] },
+      "transform_mode": { "type": "string", "label": "转换模式", "default": "rms", "options": ["rms", "short_energy", "abs", "log", "phase"], "note": "short_energy=短时能量(ShortEnergy)；传给后端 func_das_convert 的 transform_mode" },
       "norm_min": { "type": "float", "label": "归一化最小值", "default": 0.0 },
       "norm_max": { "type": "float", "label": "归一化最大值", "default": 1.0 },
       "win_len": { "type": "int", "label": "窗口长度", "default": 10, "min": 1 },

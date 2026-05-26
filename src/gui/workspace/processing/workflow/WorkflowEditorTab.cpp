@@ -6,6 +6,7 @@
 #include "WorkflowView.h"
 #include "NodePalette.h"
 #include "EdgeItem.h"
+#include "PlotDialog.h"
 
 #include "service/processing/IWorkflowEngine.h"
 #include "service/processing/INodeFactory.h"
@@ -405,11 +406,13 @@ void WorkflowEditorTab::setupUi()
     auto *aTestSeq = m_toolbar->addAction(tr("显示序号角标"));
     aTestSeq->setCheckable(true);
     aTestSeq->setChecked(false);
-    aTestSeq->setToolTip(tr("显示/隐藏节点标题旁的甲方序号角标（悬停节点仍可看 tooltip 序号）"));
+    aTestSeq->setToolTip(tr("显示/隐藏节点库与画布上的甲方序号角标（悬停仍可看 tooltip 序号）"));
     connect(aTestSeq, &QAction::toggled, this, [this, aTestSeq](bool on)
             {
         if (m_scene)
             m_scene->setTestSeqBadgeVisible(on);
+        if (m_palette)
+            m_palette->setTestSeqBadgeVisible(on);
         aTestSeq->setText(on ? tr("隐藏序号角标") : tr("显示序号角标"));
     });
     if (auto *btnSeq = qobject_cast<QToolButton *>(m_toolbar->widgetForAction(aTestSeq)))
@@ -509,6 +512,9 @@ void WorkflowEditorTab::setupConnections()
     connect(m_scene, &WorkflowScene::nodeDoubleClicked,
             this, &WorkflowEditorTab::onNodeDoubleClicked);
 
+    connect(m_scene, &WorkflowScene::resultViewRequested,
+            this, &WorkflowEditorTab::onResultViewRequested);
+
     // 引擎事件 → 状态栏 / 后台日志
     connect(m_engine, &IWorkflowEngine::nodeProgress, this,
             [this](const QString &id, int p, const QString &log)
@@ -522,9 +528,12 @@ void WorkflowEditorTab::setupConnections()
                     rebuildParamForm(id);
             });
     connect(m_engine, &IWorkflowEngine::edgeRejected, this,
-            [this](const EdgeInstance &, const QString &reason)
+            [this](const EdgeInstance &edge, const QString &reason)
             {
-                showStatus(tr("无法连线：%1").arg(reason), /*error*/ true);
+                const bool graphCheck = edge.fromNode.isEmpty() && edge.toNode.isEmpty();
+                showStatus(graphCheck ? tr("工作流校验失败：%1").arg(reason)
+                                      : tr("无法连线：%1").arg(reason),
+                           /*error*/ true);
             });
     connect(m_engine, &IWorkflowEngine::nodeStatusChanged, this,
             [this](const QString &id, NodeStatus s)
@@ -657,8 +666,84 @@ void WorkflowEditorTab::onSelectionChanged()
 void WorkflowEditorTab::onNodeDoubleClicked(const QString &nodeId)
 {
     Q_UNUSED(nodeId);
-    // 甲方确认前：不在双击时打开样例配置窗/图表窗，统一在右侧属性面板编辑
-    showStatus(tr("请在右侧属性面板编辑节点参数。"));
+    // 结果展示改由节点右键菜单「结果展示」触发
+    showStatus(tr("请在节点上右键选择「结果展示」查看运行结果。"));
+}
+
+void WorkflowEditorTab::onResultViewRequested(const QString &nodeId)
+{
+    if (!m_engine)
+        return;
+
+    QString title = nodeId;
+    QString typeId;
+    int funcId = -1;
+    for (const auto &n : m_engine->nodes())
+    {
+        if (n.instanceId == nodeId)
+        {
+            title = n.displayName;
+            typeId = n.typeId;
+            break;
+        }
+    }
+    if (m_factory)
+    {
+        for (const auto &m : m_factory->listAll())
+        {
+            if (m.typeId == typeId)
+            {
+                funcId = m.funcId;
+                break;
+            }
+        }
+    }
+
+    QStringList files;
+    auto collectExisting = [](const QStringList &candidates) {
+        QStringList out;
+        for (const QString &p : candidates)
+        {
+            const QString path = p.trimmed();
+            if (!path.isEmpty() && QFileInfo::exists(path))
+                out.append(path);
+        }
+        return out;
+    };
+
+    if (m_engine->statusOf(nodeId) == NodeStatus::Succeeded)
+        files = collectExisting(m_engine->outputsOf(nodeId));
+    if (files.isEmpty())
+    {
+        for (const auto &e : m_engine->edges())
+        {
+            if (e.toNode != nodeId)
+                continue;
+            if (m_engine->statusOf(e.fromNode) != NodeStatus::Succeeded)
+                continue;
+            files = collectExisting(m_engine->outputsOf(e.fromNode));
+            if (!files.isEmpty())
+                break;
+        }
+    }
+
+    if (files.isEmpty())
+    {
+        showStatus(tr("暂无可用结果，请先运行该节点或其上游。"), true);
+        return;
+    }
+
+    PlotDialog dlg(title, this);
+    QString summary = tr("func_id=%1 · typeId=%2").arg(funcId).arg(typeId);
+    if (typeId == QLatin1String("preprocess.das_convert"))
+        summary += tr("\n（DAS 转换：单通道时域曲线 + 时间×通道热力图 — 待后端绘图数据接入）");
+    else if (typeId == QLatin1String("preprocess.fft_extract"))
+        summary += tr("\n（FFT：单通道频谱 + 频率×通道热力图 — 待后端绘图数据接入）");
+    else if (typeId.startsWith(QLatin1String("display.")))
+        summary += tr("\n（展示节点：显示上游预处理/解释结果）");
+    dlg.setMetaInfo(files, summary);
+    dlg.setDemoFromSeed(nodeId + files.join(QLatin1Char('|')), 1);
+    dlg.exec();
 }
 
 // 把当前节点的 params 转成 QFormLayout（按 QVariant 类型选 widget）

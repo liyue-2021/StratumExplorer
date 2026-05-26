@@ -82,6 +82,7 @@ namespace processing
             void onSelectionChanged();
             // 双击节点（当前仅提示，配置/展示弹窗待甲方确认后恢复）
             void onNodeDoubleClicked(const QString &nodeId);
+            void onResultViewRequested(const QString &nodeId);
             void rebuildDataInputParamForm(const QString &nodeId, const QVariantMap &displayParams);
             void rebuildFormatConvertParamForm(const QString &nodeId, const QVariantMap &displayParams);
             void onExportFormatConvert(const QString &nodeId);

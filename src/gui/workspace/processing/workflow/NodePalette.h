@@ -20,6 +20,10 @@ public:
 
     void refresh();
 
+    /// 与画布节点角标共用工具栏开关
+    void setTestSeqBadgeVisible(bool visible);
+    bool testSeqBadgeVisible() const { return m_testSeqBadgeVisible; }
+
 signals:
     void nodeTypeActivated(const QString& typeId);
 
@@ -28,7 +32,10 @@ protected:
     QMimeData*  mimeData(const QList<QTreeWidgetItem*>& items) const override;
 
 private:
+    void applySeqLabelsToItems();
+
     processing::INodeFactory* m_factory;
+    bool m_testSeqBadgeVisible = false;
 };
 
 }} // namespace processing::gui

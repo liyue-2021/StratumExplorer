@@ -37,7 +37,8 @@ const QHash<QString, NodeCompatProfile> &profileTable()
         {
             NodeCompatProfile p;
             p.family = SensorFamily::Neutral;
-            p.tier = DataTier::None; // 输出 HDF5 时域，视为进入预处理前的桥接
+            // 输出为甲方标准时域 HDF5，下游应接 DAS/DTS/DSS 的 A 类（与文档「格式转换→时域预处理」一致）
+            p.tier = DataTier::A_TimeDomain;
             p.group = NodeGroup::Preprocess;
             t.insert(QStringLiteral("preprocess.format_convert"), p);
         }
@@ -244,8 +245,17 @@ bool checkCouplingEdge(const NodeCompatProfile &pu, const NodeCompatProfile &pd,
 
 /// 同族预处理之间的 A/B/C 流转（核心规则）
 bool checkPreprocessTierFlow(const NodeCompatProfile &pu, const NodeCompatProfile &pd,
-                             const NodeMeta &down, QString *reason)
+                             const NodeMeta &up, const NodeMeta &down, QString *reason)
 {
+    Q_UNUSED(down);
+
+    // 数据输入 → 格式转换 等已在 checkDataInputEdge / checkFormatConvertEdge 处理
+    if (up.typeId == QLatin1String("input.data_input"))
+        return true;
+    if (up.typeId == QLatin1String("preprocess.format_convert")
+        && pd.tier == DataTier::A_TimeDomain)
+        return true;
+
     if (pu.terminal)
         return fail(reason, QObject::tr("特征结果（C 类）之后不能再接算法模块"));
 
@@ -365,7 +375,7 @@ QString nodeTestSeqLabel(const QString &typeId, int funcId)
         return QObject::tr("入·数据源");
 
     if (typeId == QLatin1String("preprocess.format_convert"))
-        return QObject::tr("0·格式转换");
+        return QObject::tr("0·通用·A");
 
     if (funcId >= 1 && funcId <= 23)
     {
@@ -470,9 +480,10 @@ bool isAlgorithmEdgeCompatible(const NodeMeta &upstream, const NodeMeta &downstr
     if (!checkInterpretDisplayEdge(pu, pd, upstream, downstream, reason))
         return false;
 
-    // 预处理 ↔ 预处理
-    if (pu.group == NodeGroup::Preprocess && pd.group == NodeGroup::Preprocess)
-        return checkPreprocessTierFlow(pu, pd, downstream, reason);
+    // 预处理 ↔ 预处理（数据输入走 DataInput 分组，不进入本规则）
+    if (upstream.group != NodeGroup::DataInput && downstream.group != NodeGroup::DataInput
+        && pu.group == NodeGroup::Preprocess && pd.group == NodeGroup::Preprocess)
+        return checkPreprocessTierFlow(pu, pd, upstream, downstream, reason);
 
     // 预处理 → 解释/展示 已在 checkInterpretDisplayEdge 处理
     if (pu.group == NodeGroup::Preprocess

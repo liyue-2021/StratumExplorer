@@ -73,6 +73,8 @@ namespace processing
             // 用户在画布上双击节点。WorkflowEditorTab 会据此对 display.* 节点
             // 弹出可视化窗口（QCustomPlot）。
             void nodeDoubleClicked(const QString &nodeId);
+            /// 右键「结果展示」：由 WorkflowEditorTab 打开结果面板
+            void resultViewRequested(const QString &nodeId);
 
         protected:
             void mousePressEvent(QGraphicsSceneMouseEvent *e) override;

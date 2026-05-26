@@ -17,9 +17,49 @@
 #include <QMimeData>
 #include <QPen>
 #include <QSet>
+#include <QFileInfo>
 
 using namespace processing;
 using namespace processing::gui;
+
+namespace
+{
+/// 节点是否已有可展示的结果（本节点成功产出，或上游已成功产出）
+bool resolveResultFiles(processing::IWorkflowEngine *engine, const QString &nodeId,
+                        QStringList *files)
+{
+    if (!engine || !files)
+        return false;
+    files->clear();
+
+    auto appendExisting = [](QStringList *out, const QStringList &candidates)
+    {
+        for (const QString &p : candidates)
+        {
+            const QString path = p.trimmed();
+            if (!path.isEmpty() && QFileInfo::exists(path))
+                out->append(path);
+        }
+    };
+
+    if (engine->statusOf(nodeId) == NodeStatus::Succeeded)
+        appendExisting(files, engine->outputsOf(nodeId));
+    if (!files->isEmpty())
+        return true;
+
+    for (const EdgeInstance &e : engine->edges())
+    {
+        if (e.toNode != nodeId)
+            continue;
+        if (engine->statusOf(e.fromNode) != NodeStatus::Succeeded)
+            continue;
+        appendExisting(files, engine->outputsOf(e.fromNode));
+        if (!files->isEmpty())
+            return true;
+    }
+    return false;
+}
+} // namespace
 
 WorkflowScene::WorkflowScene(IWorkflowEngine *engine, INodeFactory *factory, QObject *parent)
     : QGraphicsScene(parent), m_engine(engine), m_factory(factory)
@@ -676,6 +716,14 @@ void WorkflowScene::contextMenuEvent(QGraphicsSceneContextMenuEvent *e)
 
     QMenu menu;
     QAction *aRun = menu.addAction(tr("运行此节点"));
+    menu.addSeparator();
+    QAction *aShowResult = menu.addAction(tr("结果展示"));
+    QStringList resultFiles;
+    const bool hasResult = resolveResultFiles(m_engine, id, &resultFiles);
+    aShowResult->setEnabled(hasResult);
+    aShowResult->setToolTip(hasResult ? tr("查看节点或上游的运行结果")
+                                      : tr("请先运行该节点（或上游），并确保产生输出文件"));
+    menu.addSeparator();
     QAction *aRename = menu.addAction(tr("重命名..."));
     QAction *aReset = menu.addAction(tr("重置参数"));
     menu.addSeparator();
@@ -692,6 +740,10 @@ void WorkflowScene::contextMenuEvent(QGraphicsSceneContextMenuEvent *e)
     if (sel == aRun)
     {
         m_engine->runSingle(id);
+    }
+    else if (sel == aShowResult)
+    {
+        emit resultViewRequested(id);
     }
     else if (sel == aDelete)
     {

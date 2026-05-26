@@ -463,11 +463,12 @@ namespace processing
         if (exitStatus == QProcess::NormalExit)
         {
             // 生成期望的任务结果文件路径（在 outputPath 下）
+            // 甲方约定：task_[func_id]_[task_id].h5（JSON 协议时扩展名为 .json）
             const QString taskFileName =
-                QStringLiteral("task_%1.%2").arg(req.taskId).arg(configExt);
+                QStringLiteral("task_%1_%2.%3").arg(req.funcId).arg(req.taskId).arg(configExt);
             QString taskPath = req.outputPath.isEmpty()
                                    ? (configDir + "/" + taskFileName)
-                                   : (req.outputPath + "/" + taskFileName);
+                                   : (QDir(req.outputPath).filePath(taskFileName));
 
             // 检查任务结果文件是否存在
             if (QFileInfo::exists(taskPath))

@@ -34,7 +34,7 @@ namespace processing
      * ───────────────────────────────────────────────────────────────────
      * 协议（与算法 EXE 约定，单任务一进程）
      *   输入：主程序启动 EXE，传入 input_config_<taskId>.json 路径（唯一参数；USE_HDF5 时为 .h5）
-     *   输出：EXE 在 outputPath 下写入 task_<taskId>.json（或 stdout 打印结果路径）
+     *   输出：EXE 在 outputPath 下写入 task_<funcId>_<taskId>.h5（JSON 协议时为 .json）
      *
      * 前端职责：组装下列字段并写入配置文件；不解析业务 HDF5 数据集。
      * 后端职责：读配置、跑算法、写结果文件（及业务 HDF5 数据文件）。
@@ -52,7 +52,7 @@ namespace processing
      *   （上列 6 个 IO 路径由 TaskRequest 对应字段填入，见 ExternalProcessNode::run）
      *   /params/                 {...}    算法运行参数（各模块自定义）
      *
-     * task_<taskId> 结果文件结构：
+     * task_<funcId>_<taskId> 结果文件结构：
      *   /task_info/task_id       int      回传任务标识
      *   /task_info/func_id       int      功能编号
      *   /task_info/func_name     string   功能名称
@@ -119,7 +119,7 @@ namespace processing
         // 生成 input_config 任务配置文件（默认 .json）
         bool writeInputConfig(const TaskRequest &req, const QString &configPath) const;
 
-        // 读取 task_<id> 结果文件
+        // 读取 task_<funcId>_<taskId> 结果文件
         TaskResult readTaskResult(const QString &taskPath) const;
 
         std::atomic<bool> m_cancel{false};
