@@ -6,6 +6,7 @@ add_library(core_interfaces_service_processing STATIC
     IProcessNode.h
     INodeFactory.h
     IWorkflowEngine.h
+    IPlotData.h
 )
 
 target_include_directories(core_interfaces_service_processing PUBLIC

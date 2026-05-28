@@ -23,6 +23,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QDir>
+#include <QSet>
 #include <QTimer>
 #include <QDebug>
 #include <QScrollArea>
@@ -36,6 +37,7 @@
 #include <QPushButton>
 #include <QTextEdit>
 #include <QSet>
+#include <QCoreApplication>
 
 namespace {
 
@@ -670,6 +672,92 @@ void WorkflowEditorTab::onNodeDoubleClicked(const QString &nodeId)
     showStatus(tr("请在节点上右键选择「结果展示」查看运行结果。"));
 }
 
+namespace {
+
+QStringList findDependSampleH5()
+{
+    QStringList out;
+    QSet<QString> seenRoots;
+    QSet<QString> seenFiles;
+
+    QStringList roots;
+    auto queueRoot = [&](const QString& root) {
+        const QString canon = QDir(root).absolutePath();
+        if (canon.isEmpty() || seenRoots.contains(canon))
+            return;
+        seenRoots.insert(canon);
+        roots.append(canon);
+    };
+
+    queueRoot(QDir::currentPath() + QStringLiteral("/depend"));
+    queueRoot(QDir::currentPath() + QStringLiteral("/../depend"));
+    queueRoot(QDir::currentPath() + QStringLiteral("/../../depend"));
+
+    const QString appDir = QCoreApplication::applicationDirPath();
+    // 标准输出布局: <repo>/bin/windows/x64/DEBUG|RELEASE/StratumExplorer.exe
+    queueRoot(QDir(appDir).absoluteFilePath(QStringLiteral("../../../../depend")));
+    queueRoot(appDir + QStringLiteral("/depend"));
+    QDir walk(appDir);
+    for (int i = 0; i < 8; ++i) {
+        queueRoot(walk.absoluteFilePath(QStringLiteral("depend")));
+        if (!walk.cdUp())
+            break;
+    }
+
+    for (const QString& root : roots) {
+        const QDir dir(root);
+        if (!dir.exists())
+            continue;
+        const QFileInfoList list =
+            dir.entryInfoList({QStringLiteral("*.h5")}, QDir::Files, QDir::Name);
+        for (const QFileInfo& fi : list) {
+            const QString abs = fi.absoluteFilePath();
+            if (!seenFiles.contains(abs)) {
+                seenFiles.insert(abs);
+                out.append(abs);
+            }
+        }
+    }
+    return out;
+}
+
+QString resolveProcessedH5Path(const QStringList& candidateFiles, QString* err)
+{
+    QString bestProcessed;
+    qint64  bestSize = -1;
+
+    for (const QString& raw : candidateFiles) {
+        const QString p = raw.trimmed();
+        if (p.isEmpty())
+            continue;
+        QFileInfo fi(p);
+        if (!fi.exists() || !p.endsWith(QStringLiteral(".h5"), Qt::CaseInsensitive))
+            continue;
+
+        const QString name = fi.fileName().toLower();
+        if (name.contains(QStringLiteral("processed"))) {
+            if (fi.size() > bestSize) {
+                bestSize = fi.size();
+                bestProcessed = fi.absoluteFilePath();
+            }
+            continue;
+        }
+        if (!name.contains(QStringLiteral("task")) && fi.size() > bestSize) {
+            bestSize = fi.size();
+            bestProcessed = fi.absoluteFilePath();
+        }
+    }
+
+    if (!bestProcessed.isEmpty())
+        return bestProcessed;
+
+    if (err)
+        *err = QObject::tr("未找到 processed_*.h5 输出文件");
+    return {};
+}
+
+} // namespace
+
 void WorkflowEditorTab::onResultViewRequested(const QString &nodeId)
 {
     if (!m_engine)
@@ -727,22 +815,51 @@ void WorkflowEditorTab::onResultViewRequested(const QString &nodeId)
         }
     }
 
-    if (files.isEmpty())
+    const bool h5PlotNode = (funcId == 5 || funcId == 8
+                             || typeId == QLatin1String("preprocess.das_convert")
+                             || typeId == QLatin1String("preprocess.fft_extract"));
+    if (!h5PlotNode)
     {
-        showStatus(tr("暂无可用结果，请先运行该节点或其上游。"), true);
+        showStatus(tr("此节点不支持 HDF5 图形展示，请对 DAS 转换(func5) 或 FFT(func8) 使用「结果展示」。"),
+                   true);
         return;
+    }
+
+    QStringList allFiles = files;
+    for (const QString& p : findDependSampleH5()) {
+        if (!allFiles.contains(p))
+            allFiles.append(p);
     }
 
     PlotDialog dlg(title, this);
     QString summary = tr("func_id=%1 · typeId=%2").arg(funcId).arg(typeId);
-    if (typeId == QLatin1String("preprocess.das_convert"))
-        summary += tr("\n（DAS 转换：单通道时域曲线 + 时间×通道热力图 — 待后端绘图数据接入）");
-    else if (typeId == QLatin1String("preprocess.fft_extract"))
-        summary += tr("\n（FFT：单通道频谱 + 频率×通道热力图 — 待后端绘图数据接入）");
-    else if (typeId.startsWith(QLatin1String("display.")))
-        summary += tr("\n（展示节点：显示上游预处理/解释结果）");
-    dlg.setMetaInfo(files, summary);
-    dlg.setDemoFromSeed(nodeId + files.join(QLatin1Char('|')), 1);
+    const int plotFuncId =
+        (funcId == 8 || typeId == QLatin1String("preprocess.fft_extract")) ? 8 : 5;
+
+    QString resolveErr;
+    const QString h5Path = resolveProcessedH5Path(allFiles, &resolveErr);
+    if (h5Path.isEmpty()) {
+        if (!resolveErr.isEmpty())
+            summary += QStringLiteral("\n") + resolveErr;
+        const QStringList scanned = findDependSampleH5();
+        if (!scanned.isEmpty()) {
+            summary += tr("\ndepend 内 H5(%1): %2")
+                           .arg(scanned.size())
+                           .arg(scanned.join(QStringLiteral("; ")));
+        } else {
+            summary += tr("\n未扫描到 depend/*.h5 · exe=%1 · cwd=%2")
+                           .arg(QCoreApplication::applicationDirPath(), QDir::currentPath());
+        }
+    } else {
+        QString loadErr;
+        if (dlg.loadResultFromPlotService(h5Path, plotFuncId, &loadErr)) {
+            summary += tr("\n【真实数据】文件: %1").arg(h5Path);
+        } else {
+            summary += tr("\n读取失败: %1").arg(loadErr);
+        }
+    }
+
+    dlg.setMetaInfo(allFiles, summary);
     dlg.exec();
 }
 

@@ -24,7 +24,7 @@ using namespace processing::gui;
 
 namespace
 {
-/// 节点是否已有可展示的结果（本节点成功产出，或上游已成功产出）
+/// 收集节点或上游已存在磁盘上的输出文件路径
 bool resolveResultFiles(processing::IWorkflowEngine *engine, const QString &nodeId,
                         QStringList *files)
 {
@@ -58,6 +58,42 @@ bool resolveResultFiles(processing::IWorkflowEngine *engine, const QString &node
             return true;
     }
     return false;
+}
+
+bool supportsH5PlotResultView(processing::INodeFactory *factory,
+                              processing::IWorkflowEngine *engine, const QString &nodeId)
+{
+    if (!factory || !engine)
+        return false;
+    QString typeId;
+    for (const NodeInstance &n : engine->nodes())
+    {
+        if (n.instanceId == nodeId)
+        {
+            typeId = n.typeId;
+            break;
+        }
+    }
+    if (typeId == QLatin1String("preprocess.das_convert")
+        || typeId == QLatin1String("preprocess.fft_extract"))
+        return true;
+    for (const NodeMeta &m : factory->listAll())
+    {
+        if (m.typeId == typeId && (m.funcId == 5 || m.funcId == 8))
+            return true;
+    }
+    return false;
+}
+
+/// 是否可打开结果展示（有输出文件，或 func5/8 可从 depend 读 processed_*.h5）
+bool canOpenResultView(processing::IWorkflowEngine *engine, processing::INodeFactory *factory,
+                       const QString &nodeId, QStringList *files)
+{
+    if (resolveResultFiles(engine, nodeId, files))
+        return true;
+    if (files)
+        files->clear();
+    return supportsH5PlotResultView(factory, engine, nodeId);
 }
 } // namespace
 
@@ -719,10 +755,13 @@ void WorkflowScene::contextMenuEvent(QGraphicsSceneContextMenuEvent *e)
     menu.addSeparator();
     QAction *aShowResult = menu.addAction(tr("结果展示"));
     QStringList resultFiles;
-    const bool hasResult = resolveResultFiles(m_engine, id, &resultFiles);
+    const bool hasResult = canOpenResultView(m_engine, m_factory, id, &resultFiles);
+    const bool dependOnly = hasResult && resultFiles.isEmpty();
     aShowResult->setEnabled(hasResult);
-    aShowResult->setToolTip(hasResult ? tr("查看节点或上游的运行结果")
-                                      : tr("请先运行该节点（或上游），并确保产生输出文件"));
+    aShowResult->setToolTip(
+        dependOnly ? tr("从 depend/processed_*.h5 或节点输出读取真实数据并绘图")
+                   : (hasResult ? tr("查看节点或上游的运行结果（processed_*.h5）")
+                                : tr("请先运行该节点（或上游），或放置 depend/processed_*.h5")));
     menu.addSeparator();
     QAction *aRename = menu.addAction(tr("重命名..."));
     QAction *aReset = menu.addAction(tr("重置参数"));

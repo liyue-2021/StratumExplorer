@@ -58,7 +58,7 @@ qt_generate_translations(generate_qm
 #==================== HDF5 支持 ====================
 if(WITH_HDF5)
     include(FindHDF5)
-    add_definitions(-DWITH_HDF5)
+    add_compile_definitions(WITH_HDF5)
 endif()
 
 #==================== 调度子目录 ====================

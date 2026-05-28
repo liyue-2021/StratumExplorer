@@ -10,6 +10,7 @@ set(SOURCES
     ExternalProcessNode.cpp
     ParamRangePair.cpp
     NodeCompatibility.cpp
+    PlotData.cpp
     LogBus.cpp
     node_client_params.qrc
 )
@@ -23,6 +24,7 @@ set(HEADERS
     ExternalProcessNode.h
     ParamRangePair.h
     NodeCompatibility.h
+    PlotData.h
     LogBus.h
 )
 
@@ -44,3 +46,7 @@ target_link_libraries(core_service_processing PUBLIC
     core_interfaces_models_processing
     core_interfaces_service_processing
 )
+
+if(WITH_HDF5)
+    target_link_libraries(core_service_processing PUBLIC CoreDepends)
+endif()

@@ -11,4 +11,7 @@ target_link_libraries(CoreDepends INTERFACE
 
 if(WITH_HDF5)
     target_link_libraries(CoreDepends INTERFACE hdf5_cpp-static)
+    if(TARGET zlibstatic)
+        target_link_libraries(CoreDepends INTERFACE zlibstatic)
+    endif()
 endif()
