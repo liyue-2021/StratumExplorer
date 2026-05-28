@@ -137,8 +137,44 @@ void PlotData::LoadPlotData(const PlotRequest& req, PlotDisplayData* out, QStrin
         for (int i = 0; i < out->cols; ++i)
             out->x[static_cast<size_t>(i)] = i;
     } else if (req.kind == QStringLiteral("Window")) {
-        fail(QObject::tr("Window 模式尚未实现"));
-        return;
+        int t0 = qBound(0, req.t_start, static_cast<int>(cols) - 1);
+        int t1 = qBound(0, req.t_end, static_cast<int>(cols) - 1);
+        if (t0 > t1)
+            std::swap(t0, t1);
+        int ch0 = qBound(0, req.ch_start, static_cast<int>(rows) - 1);
+        int ch1 = qBound(0, req.ch_end, static_cast<int>(rows) - 1);
+        if (ch0 > ch1)
+            std::swap(ch0, ch1);
+
+        const hsize_t rowCount = static_cast<hsize_t>(ch1 - ch0 + 1);
+        const hsize_t colCount = static_cast<hsize_t>(t1 - t0 + 1);
+        const hsize_t offset[2] = {static_cast<hsize_t>(ch0), static_cast<hsize_t>(t0)};
+        const hsize_t count[2]  = {rowCount, colCount};
+        if (H5Sselect_hyperslab(space_id, H5S_SELECT_SET, offset, nullptr, count, nullptr) < 0) {
+            fail(QObject::tr("Window hyperslab 选择失败"));
+            return;
+        }
+
+        const hsize_t memDims[2] = {rowCount, colCount};
+        hid_t         memspace_id = H5Screate_simple(2, memDims, nullptr);
+        std::vector<float> buffer(static_cast<size_t>(rowCount) * colCount);
+        const herr_t status = H5Dread(dataset_id, H5T_NATIVE_FLOAT, memspace_id, space_id,
+                                      H5P_DEFAULT, buffer.data());
+        H5Sclose(memspace_id);
+        if (status < 0) {
+            fail(QObject::tr("读取 Window 数据失败"));
+            return;
+        }
+
+        out->rows = static_cast<int>(rowCount);
+        out->cols = static_cast<int>(colCount);
+        out->data = std::move(buffer);
+        out->x.resize(out->cols);
+        out->y.resize(out->rows);
+        for (int i = 0; i < out->cols; ++i)
+            out->x[static_cast<size_t>(i)] = t0 + i;
+        for (int j = 0; j < out->rows; ++j)
+            out->y[static_cast<size_t>(j)] = ch0 + j;
     } else {
         fail(QObject::tr("未知 kind: %1").arg(req.kind));
         return;

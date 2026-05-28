@@ -9,6 +9,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QDebug>
+#include <vector>
 
 // HDF5 support - 使用 hdf5 库读写配置文件
 // 注意：需要链接 hdf5 库，CMakeLists.txt 中添加 find_package(HDF5) 并链接 hdf5
@@ -36,28 +38,28 @@ namespace processing
 #ifdef USE_HDF5
         try
         {
-            H5File file(configPath.toStdString(), H5F_CREATE_TRUNCATE);
+            H5File file(configPath.toStdString(), H5F_ACC_TRUNC);
 
             // /task_info 组
             Group taskInfoGroup(file.createGroup("/task_info"));
             {
-                // task_id - int32
-                int32_t taskId = req.taskId;
-                DataSpace dataspace(DataSpace::SCALAR);
-                DataSet dataset = taskInfoGroup.createDataSet("task_id", PredType::NATIVE_INT32, dataspace);
-                dataset.write(&taskId, PredType::NATIVE_INT32);
+                quint32 taskId = static_cast<quint32>(req.taskId);
+                DataSpace dataspace(H5S_SCALAR);
+                DataSet dataset =
+                    taskInfoGroup.createDataSet("task_id", PredType::NATIVE_UINT32, dataspace);
+                dataset.write(&taskId, PredType::NATIVE_UINT32);
             }
             {
                 // func_id - int32
                 int32_t funcId = req.funcId;
-                DataSpace dataspace(DataSpace::SCALAR);
+                DataSpace dataspace(H5S_SCALAR);
                 DataSet dataset = taskInfoGroup.createDataSet("func_id", PredType::NATIVE_INT32, dataspace);
                 dataset.write(&funcId, PredType::NATIVE_INT32);
             }
             {
                 // func_name - string (variable length)
                 StrType strType(PredType::C_S1, H5T_VARIABLE);
-                DataSpace dataspace(DataSpace::SCALAR);
+                DataSpace dataspace(H5S_SCALAR);
                 DataSet dataset = taskInfoGroup.createDataSet("func_name", strType, dataspace);
                 dataset.write(req.funcName.toStdString(), strType);
             }
@@ -70,17 +72,18 @@ namespace processing
                 DataSpace dataspace(1, &dims);
                 StrType strType(PredType::C_S1, H5T_VARIABLE);
                 DataSet dataset = ioGroup.createDataSet("input_path", strType, dataspace);
-                std::vector<std::string> inputStrs;
-                for (const auto &p : req.inputPaths)
-                {
-                    inputStrs.push_back(p.toStdString());
+                std::vector<const char*> inputPtrs(req.inputPaths.size());
+                std::vector<std::string> inputStrs(req.inputPaths.size());
+                for (int i = 0; i < req.inputPaths.size(); ++i) {
+                    inputStrs[static_cast<size_t>(i)] = req.inputPaths[i].toStdString();
+                    inputPtrs[static_cast<size_t>(i)] = inputStrs[static_cast<size_t>(i)].c_str();
                 }
-                dataset.write(inputStrs, strType);
+                dataset.write(inputPtrs.data(), strType);
             }
             {
                 // output_path - string
                 StrType strType(PredType::C_S1, H5T_VARIABLE);
-                DataSpace dataspace(DataSpace::SCALAR);
+                DataSpace dataspace(H5S_SCALAR);
                 DataSet dataset = ioGroup.createDataSet("output_path", strType, dataspace);
                 dataset.write(req.outputPath.toStdString(), strType);
             }
@@ -88,28 +91,28 @@ namespace processing
             if (!req.refDepthPath.isEmpty())
             {
                 StrType strType(PredType::C_S1, H5T_VARIABLE);
-                DataSpace dataspace(DataSpace::SCALAR);
+                DataSpace dataspace(H5S_SCALAR);
                 DataSet dataset = ioGroup.createDataSet("ref_depth_path", strType, dataspace);
                 dataset.write(req.refDepthPath.toStdString(), strType);
             }
             if (!req.calibPath.isEmpty())
             {
                 StrType strType(PredType::C_S1, H5T_VARIABLE);
-                DataSpace dataspace(DataSpace::SCALAR);
+                DataSpace dataspace(H5S_SCALAR);
                 DataSet dataset = ioGroup.createDataSet("calib_path", strType, dataspace);
                 dataset.write(req.calibPath.toStdString(), strType);
             }
             if (!req.tempPath.isEmpty())
             {
                 StrType strType(PredType::C_S1, H5T_VARIABLE);
-                DataSpace dataspace(DataSpace::SCALAR);
+                DataSpace dataspace(H5S_SCALAR);
                 DataSet dataset = ioGroup.createDataSet("temp_path", strType, dataspace);
                 dataset.write(req.tempPath.toStdString(), strType);
             }
             if (!req.refPath.isEmpty())
             {
                 StrType strType(PredType::C_S1, H5T_VARIABLE);
-                DataSpace dataspace(DataSpace::SCALAR);
+                DataSpace dataspace(H5S_SCALAR);
                 DataSet dataset = ioGroup.createDataSet("ref_path", strType, dataspace);
                 dataset.write(req.refPath.toStdString(), strType);
             }
@@ -123,21 +126,21 @@ namespace processing
                 if (value.typeId() == QMetaType::Double)
                 {
                     double d = value.toDouble();
-                    DataSpace dataspace(DataSpace::SCALAR);
+                    DataSpace dataspace(H5S_SCALAR);
                     DataSet dataset = paramsGroup.createDataSet(key.toStdString(), PredType::NATIVE_DOUBLE, dataspace);
                     dataset.write(&d, PredType::NATIVE_DOUBLE);
                 }
                 else if (value.typeId() == QMetaType::Int || value.typeId() == QMetaType::LongLong)
                 {
                     int i = value.toInt();
-                    DataSpace dataspace(DataSpace::SCALAR);
+                    DataSpace dataspace(H5S_SCALAR);
                     DataSet dataset = paramsGroup.createDataSet(key.toStdString(), PredType::NATIVE_INT32, dataspace);
                     dataset.write(&i, PredType::NATIVE_INT32);
                 }
                 else if (value.typeId() == QMetaType::QString)
                 {
                     StrType strType(PredType::C_S1, H5T_VARIABLE);
-                    DataSpace dataspace(DataSpace::SCALAR);
+                    DataSpace dataspace(H5S_SCALAR);
                     DataSet dataset = paramsGroup.createDataSet(key.toStdString(), strType, dataspace);
                     dataset.write(value.toString().toStdString(), strType);
                 }
@@ -214,18 +217,26 @@ namespace processing
             if (result.status == NodeStatus::Failed)
             {
                 DataSet dataset = file.openDataSet("/status/message");
-                std::string msg;
-                dataset.read(msg, PredType::C_S1);
-                result.message = QString::fromStdString(msg);
+                StrType strType(PredType::C_S1, H5T_VARIABLE);
+                char*   strData = nullptr;
+                dataset.read(&strData, strType);
+                if (strData) {
+                    result.message = QString::fromUtf8(strData);
+                    H5free_memory(strData);
+                }
             }
 
             // /io/data_file_path
             try
             {
                 DataSet dataset = file.openDataSet("/io/data_file_path");
-                std::string path;
-                dataset.read(path, PredType::C_S1);
-                result.dataFilePath = QString::fromStdString(path);
+                StrType strType(PredType::C_S1, H5T_VARIABLE);
+                char*   strData = nullptr;
+                dataset.read(&strData, strType);
+                if (strData) {
+                    result.dataFilePath = QString::fromUtf8(strData);
+                    H5free_memory(strData);
+                }
             }
             catch (Exception &)
             {

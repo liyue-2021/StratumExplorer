@@ -77,6 +77,17 @@ cmake -B build -DCMAKE_TOOLCHAIN_FILE=%USERPROFILE%/vcpkg/scripts/buildsystems/v
 
 并改 `FindHDF5.cmake` 为 `find_package(HDF5 CONFIG REQUIRED)`（与当前 FetchContent 二选一）。
 
+## 已合并的力炜模块（oilPro）
+
+| 模块 | 说明 |
+|------|------|
+| `IPlotData` / `PlotData` | 读 `/Processed/Data`（Overview / Channel / Window） |
+| `PlotDialog` | 真实数据热力图 + 单通道曲线 |
+| `ExternalProcessRunner` + `USE_HDF5` | `input_config_*.h5`、`task_*.h5`（`WITH_HDF5=ON` 时） |
+| `LASToHDF5Converter` | 格式转换节点 LAS→H5（`WITH_HDF5=ON`） |
+
+无 HDF5 的日常构建（`build_oilpro.cmd`）仍用 **JSON** 任务配置；HDF5 构建（`build_oilpro_hdf5.cmd`）与力炜后端 EXE 协议一致。
+
 ## 和力炜的分工建议
 
 | 谁 | 做什么 |

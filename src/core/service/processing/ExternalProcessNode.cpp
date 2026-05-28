@@ -10,6 +10,9 @@
 // =============================================================================
 #include "ExternalProcessNode.h"
 #include "ParamRangePair.h"
+#ifdef WITH_HDF5
+#include "LASToHDF5Converter.h"
+#endif
 
 #include <QDir>
 #include <QFile>
@@ -42,6 +45,68 @@ namespace processing
 
     NodeRunResult ExternalProcessNode::run(ProgressCallback onProgress)
     {
+        // 格式转换：LAS → HDF5（力炜 LASToHDF5Converter，应用内转换，不启 EXE）
+        if (m_meta.typeId.contains(QLatin1String("format_convert"))) {
+            const QString outDir = m_params.value(QStringLiteral("output_dir")).toString().trimmed();
+            if (outDir.isEmpty()) {
+                return {NodeStatus::Failed, QObject::tr("请先在属性面板选择输出路径"), {}};
+            }
+            QDir dir(outDir);
+            if (!dir.exists() && !dir.mkpath(QStringLiteral("."))) {
+                return {NodeStatus::Failed, QObject::tr("无法创建输出目录：%1").arg(outDir), {}};
+            }
+
+            QStringList convertOutputs;
+            const QString outType =
+                m_params.value(QStringLiteral("output_type"), QStringLiteral("h5")).toString();
+            for (const QString& inputFilePath : m_inputs.value(QStringLiteral("in"))) {
+                const QFileInfo inputFileInfo(inputFilePath);
+                if (!inputFileInfo.exists()) {
+                    return {NodeStatus::Failed,
+                            QObject::tr("输入文件不存在: %1").arg(inputFilePath),
+                            {}};
+                }
+
+                const QString outputFileName =
+                    inputFileInfo.completeBaseName() + QLatin1Char('.') + outType;
+                const QString outputFilePath = dir.filePath(outputFileName);
+
+                if (inputFileInfo.suffix().compare(outType, Qt::CaseInsensitive) == 0) {
+                    convertOutputs.append(inputFilePath);
+                    continue;
+                }
+
+                if (inputFileInfo.suffix().compare(QLatin1String("las"), Qt::CaseInsensitive) == 0
+                    && outType.compare(QLatin1String("h5"), Qt::CaseInsensitive) == 0) {
+#ifdef WITH_HDF5
+                    LASToHDF5Converter converter;
+                    if (!converter.convertLASFile(inputFilePath, outputFilePath)) {
+                        return {NodeStatus::Failed,
+                                QObject::tr("LAS 转 HDF5 失败: %1").arg(inputFilePath),
+                                {}};
+                    }
+                    convertOutputs.append(outputFilePath);
+                    continue;
+#else
+                    return {NodeStatus::Failed,
+                            QObject::tr("LAS→HDF5 需要 WITH_HDF5=ON 构建"),
+                            {}};
+#endif
+                }
+
+                return {NodeStatus::Failed,
+                        QObject::tr("暂不支持 %1 → %2 转换")
+                            .arg(inputFileInfo.suffix(), outType),
+                        {}};
+            }
+
+            if (onProgress)
+                onProgress(100, QObject::tr("已转换 %1 个文件").arg(convertOutputs.size()));
+            return {NodeStatus::Succeeded,
+                    QObject::tr("已转换 %1 个文件").arg(convertOutputs.size()),
+                    convertOutputs};
+        }
+
         // 非外部进程节点：数据输入 / 展示类
         if (!m_meta.externalProcess)
         {
@@ -68,85 +133,6 @@ namespace processing
                     onProgress(100, QObject::tr("已加载 %1 个文件").arg(outs.size()));
                 return {NodeStatus::Succeeded,
                         QObject::tr("数据输入就绪（%1 个文件）").arg(outs.size()),
-                        outs};
-            }
-
-            // [后端] preprocess.format_convert：下列为 UI 联调占位，非真实转换。
-            // 对接说明见 docs/BACKEND_HANDOFF.md §8.1（推荐改 externalProcess=true 走甲方 EXE）。
-            if (m_meta.typeId == QLatin1String("preprocess.format_convert"))
-            {
-                QStringList inputs;
-                for (auto it = m_inputs.constBegin(); it != m_inputs.constEnd(); ++it)
-                    inputs.append(it.value());
-
-                if (inputs.isEmpty())
-                {
-                    return {NodeStatus::Failed,
-                            QObject::tr("请先将上游节点（如「数据输入」）连线并提供输入文件"),
-                            {}};
-                }
-
-                const QString outDir =
-                    m_params.value(QStringLiteral("output_dir")).toString().trimmed();
-                if (outDir.isEmpty())
-                {
-                    return {NodeStatus::Failed,
-                            QObject::tr("请在属性面板设置输出目录"),
-                            {}};
-                }
-
-                QDir dir(outDir);
-                if (!dir.exists() && !dir.mkpath(QStringLiteral(".")))
-                {
-                    return {NodeStatus::Failed,
-                            QObject::tr("无法创建输出目录：%1").arg(outDir),
-                            {}};
-                }
-
-                QStringList outs;
-                int step = 0;
-                const int total = inputs.size();
-                for (const QString &inPath : inputs)
-                {
-                    ++step;
-                    if (onProgress)
-                    {
-                        onProgress(step * 100 / total,
-                                   QObject::tr("正在转换 %1/%2：%3")
-                                       .arg(step)
-                                       .arg(total)
-                                       .arg(QFileInfo(inPath).fileName()));
-                    }
-
-                    const QFileInfo inFi(inPath);
-                    const QString outPath =
-                        dir.filePath(inFi.completeBaseName() + QStringLiteral(".h5"));
-
-                    QFile inFile(inPath);
-                    QFile outFile(outPath);
-                    if (!inFile.open(QIODevice::ReadOnly))
-                    {
-                        return {NodeStatus::Failed,
-                                QObject::tr("无法读取输入文件：%1").arg(inPath),
-                                {}};
-                    }
-                    if (!outFile.open(QIODevice::WriteOnly))
-                    {
-                        return {NodeStatus::Failed,
-                                QObject::tr("无法写入输出文件：%1").arg(outPath),
-                                {}};
-                    }
-                    // TODO(后端): 替换为甲方 LAS→H5 算法或 EXE func_format_convert，勿保留 readAll 占位
-                    outFile.write(inFile.readAll());
-                    inFile.close();
-                    outFile.close();
-                    outs.append(outPath);
-                }
-
-                if (onProgress)
-                    onProgress(100, QObject::tr("转换完成，共 %1 个 H5").arg(outs.size()));
-                return {NodeStatus::Succeeded,
-                        QObject::tr("已生成 %1 个 H5 文件").arg(outs.size()),
                         outs};
             }
 

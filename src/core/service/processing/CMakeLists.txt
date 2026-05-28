@@ -48,5 +48,10 @@ target_link_libraries(core_service_processing PUBLIC
 )
 
 if(WITH_HDF5)
+    target_sources(core_service_processing PRIVATE
+        LASToHDF5Converter.cpp
+        LASToHDF5Converter.h
+    )
+    target_compile_definitions(core_service_processing PRIVATE USE_HDF5)
     target_link_libraries(core_service_processing PUBLIC CoreDepends)
 endif()
